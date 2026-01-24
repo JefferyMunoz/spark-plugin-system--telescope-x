@@ -1,0 +1,49 @@
+{
+  "name": "spark-plugin-ui--telescope-x",
+  "pluginName": "闪搭X",
+  "author": "ssshuai",
+  "version": "1.1.3",
+  "description": "闪搭X - 极简开发者工具箱",
+  "main": "index.html",
+  "pluginSetting": {
+    "height": 607
+  },
+  "preload": "./preload.cjs",
+  "logo": "logo.png",
+  "development": "http://localhost:8086",
+  "pluginType": "system",
+  "entry": "main.cjs",
+  "features": [
+    {
+      "code": "telescope-x",
+      "explain": "闪搭X",
+      "cmds": [
+        {
+          "type": "over",
+          "label": "闪搭X",
+          "match": "/^sd$/i"
+        },
+        {
+          "type": "over",
+          "label": "闪搭X",
+          "match": "/^sdx$/i"
+        },
+        "sd",
+        "sdx",
+        "闪搭",
+        "闪搭X"
+      ]
+    },
+    {
+      "code": "quick-transform",
+      "explain": "闪搭X",
+      "cmds": [
+        {
+          "type": "over",
+          "label": "闪搭X",
+          "match": "/.+/"
+        }
+      ]
+    }
+  ]
+}

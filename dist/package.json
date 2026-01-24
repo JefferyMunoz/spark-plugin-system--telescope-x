@@ -1,0 +1,89 @@
+{
+  "name": "spark-plugin-ui--telescope-x",
+  "pluginName": "TeleScopeX (闪搭X)",
+  "version": "1.1.0",
+  "description": "开发者全能瑞士军刀：划词快捷转换、智能解析、万能转换、端口杀手",
+  "main": "index.html",
+  "preload": "preload.cjs",
+  "logo": "logo.png",
+  "pluginType": "system",
+  "features": [
+    {
+      "code": "quick-transform",
+      "explain": "划词快捷转换 - 选中文字即可转换",
+      "cmds": [
+        {
+          "type": "over",
+          "label": "Base64 解码",
+          "match": "/^[A-Za-z0-9+/=]{4,}$/"
+        },
+        {
+          "type": "over",
+          "label": "Base64 编码",
+          "match": "/.+/"
+        },
+        {
+          "type": "over",
+          "label": "URL 解码",
+          "match": "/%[0-9A-Fa-f]{2}/"
+        },
+        {
+          "type": "over",
+          "label": "URL 编码",
+          "match": "/.+/"
+        },
+        {
+          "type": "over",
+          "label": "MD5 加密",
+          "match": "/.+/"
+        },
+        {
+          "type": "over",
+          "label": "JSON 格式化",
+          "match": "/^[{\\[]/"
+        },
+        {
+          "type": "over",
+          "label": "时间戳转换",
+          "match": "/^\\d{10,13}$/"
+        },
+        {
+          "type": "over",
+          "label": "快捷转换",
+          "match": "/.+/"
+        }
+      ]
+    },
+    {
+      "code": "smart-parser",
+      "explain": "JSON/Base64/TS 智能解析转换",
+      "cmds": [
+        "json",
+        "base64",
+        "ts",
+        "parse"
+      ]
+    },
+    {
+      "code": "port-killer",
+      "explain": "一键杀死端口占用",
+      "cmds": [
+        {
+          "type": "regex",
+          "label": "杀死端口",
+          "match": "/^:(\\d+)$/i"
+        },
+        "kill"
+      ]
+    },
+    {
+      "code": "transformer",
+      "explain": "时间戳/加密/命名转换",
+      "cmds": [
+        "time",
+        "md5",
+        "case"
+      ]
+    }
+  ]
+}

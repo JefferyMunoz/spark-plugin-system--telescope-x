@@ -1,0 +1,128 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+
+@theme {
+  --color-bg-white: #ffffff;
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f5f5f5;
+  --color-gray-200: #e5e5e5;
+  --color-gray-300: #d4d4d4;
+  --color-gray-500: #737373;
+  --color-gray-800: #171717;
+  --color-primary: #0070f3;
+  --color-primary-light: #eff6ff;
+  --color-primary-hover: #0060df;
+  --color-error: #f31260;
+  --color-error-light: #fee7ef;
+  --color-success: #17c964;
+  --color-success-light: #e8faf0;
+
+  --font-sans: 'Inter', -apple-system, system-ui, sans-serif;
+  --font-mono: 'Fira Code', 'Menlo', monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-white text-[#171717] antialiased;
+    font-family: var(--font-sans);
+  }
+}
+
+@layer components {
+
+  /* Geist Style Tabs */
+  .nav-tab {
+    @apply relative px-4 py-2 text-sm font-medium transition-all duration-200 rounded-lg flex items-center gap-2;
+    color: var(--color-gray-500);
+  }
+
+  .nav-tab:hover {
+    @apply bg-gray-100 text-[#171717];
+  }
+
+  .nav-tab.active {
+    @apply bg-primary-light text-primary;
+  }
+
+  /* Geist Style Card */
+  .geist-card {
+    @apply bg-white border border-gray-200 rounded-xl overflow-hidden transition-all duration-200;
+  }
+
+  /* Geist Style Input */
+  .geist-input {
+    @apply w-full px-4 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all;
+  }
+
+  /* Geist Style Textarea */
+  .geist-textarea {
+    @apply w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none;
+    font-family: var(--font-mono);
+  }
+
+  /* Geist Style Button */
+  .geist-btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all active:scale-95 border border-gray-200 bg-white text-[#171717];
+  }
+
+  .geist-btn:hover:not(:disabled) {
+    @apply border-gray-300 bg-gray-50;
+  }
+
+  .geist-btn-primary {
+    @apply bg-primary text-white border-primary;
+  }
+
+  .geist-btn-primary:hover:not(:disabled) {
+    @apply bg-[#0060df] border-[#0060df];
+  }
+
+  .geist-btn-danger {
+    @apply text-error border-error/20 hover:bg-error-light hover:border-error/40;
+  }
+
+  .text-mono {
+    font-family: var(--font-mono);
+  }
+
+  /* Grid Layouts for compact views */
+  .grid-compact {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gray-200 rounded-full hover:bg-gray-300;
+  }
+}
+
+/* Glass effect helper */
+.glass-effect {
+  @apply bg-white/80 backdrop-blur-md;
+}
+
+/* Animations */
+@keyframes pulse-soft {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TeleScopeX 交互设计选型实验室</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0070f3;
+            --bg: #000;
+            --gray-1: #111;
+            --gray-2: #333;
+            --gray-3: #444;
+            --text-main: #fff;
+            --text-dim: #888;
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+        
+        body {
+            background-color: #050505;
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-image: radial-gradient(circle at 50% 50%, #111 0%, #000 100%);
+        }
+
+        /* --- 选型控制器 --- */
+        .lab-selector {
+            position: fixed;
+            top: 40px;
+            display: flex;
+            gap: 12px;
+            background: rgba(255,255,255,0.05);
+            padding: 8px;
+            border-radius: 100px;
+            border: 1px solid var(--gray-2);
+            backdrop-filter: blur(20px);
+            z-index: 9999;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            border-radius: 100px;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .nav-btn.active {
+            background: #fff;
+            color: #000;
+            box-shadow: 0 4px 12px rgba(255,255,255,0.2);
+        }
+
+        .preview-area {
+            position: relative;
+            width: 100%;
+            height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- 通用组件样式 --- */
+        .full-popup {
+            position: absolute;
+            display: none;
+            flex-direction: column;
+            animation: popupIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes popupIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); filter: blur(10px); }
+            to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+
+        /* =========================================
+           方案 1：Raycast 极简工作流 (Dark Command)
+           特点：极其专业、专注、效率至上
+        ========================================= */
+        #style-1 {
+            width: 680px;
+            background: #000;
+            border: 1px solid #222;
+            border-radius: 12px;
+            box-shadow: 0 0 0 1px #222, 0 30px 100px rgba(0,0,0,0.8);
+            overflow: hidden;
+        }
+        .s1-header { padding: 16px 20px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+        .s1-input { background: transparent; border: none; color: #fff; font-size: 20px; width: 100%; outline: none; }
+        .s1-content { padding: 8px; max-height: 450px; overflow-y: auto; }
+        .s1-item {
+            padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; transition: 0.1s;
+        }
+        .s1-item:hover, .s1-item.active { background: #111; }
+        .s1-label { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 12px; }
+        .s1-icon { width: 24px; height: 24px; background: #222; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--primary); }
+        .s1-val { font-family: 'Fira Code', monospace; color: #666; font-size: 13px; }
+        .s1-footer { padding: 12px 20px; border-top: 1px solid #222; display: flex; justify-content: space-between; font-size: 11px; color: #444; }
+
+        /* =========================================
+           方案 2：Bento Grid 数字化瓷砖 (Modern Bento)
+           特点：扁平化展示，视觉层次丰富，适合快速扫视
+        ========================================= */
+        #style-2 {
+            width: 580px;
+            background: #09090b;
+            border: 1px solid #18181b;
+            border-radius: 24px;
+            padding: 24px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+        }
+        .s2-input-card { grid-column: span 3; background: #000; padding: 20px; border-radius: 16px; border: 1px solid #27272a; margin-bottom: 8px; }
+        .s2-input-card div { font-size: 11px; font-weight: 900; color: #52525b; margin-bottom: 8px; }
+        .s2-input-card p { font-family: 'Fira Code', monospace; font-size: 14px; color: #a1a1aa; word-break: break-all; }
+        .s2-item { background: #111; border: 1px solid #18181b; border-radius: 16px; padding: 16px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .s2-item:hover { transform: translateY(-4px); border-color: #3f3f46; background: #18181b; }
+        .s2-item.wide { grid-column: span 2; }
+        .s2-label { font-size: 10px; font-weight: 800; color: #71717a; text-transform: uppercase; margin-bottom: 6px; }
+        .s2-val { font-family: 'Fira Code', monospace; font-size: 13px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* =========================================
+           方案 3：Glassmorphism 极致玻璃 (Fluid Neo)
+           特点：通透、优雅、极深层次感
+        ========================================= */
+        #style-3 {
+            width: 420px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(40px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 32px;
+            padding: 30px;
+            box-shadow: 0 30px 70px rgba(0,0,0,0.5);
+        }
+        .s3-header { display:flex; align-items:center; gap:12px; margin-bottom:24px; }
+        .s3-logo { width:40px; height:40px; background: linear-gradient(135deg, #0070f3, #f81ce5); border-radius: 12px; }
+        .s3-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 20px; margin-bottom: 12px; transition: 0.3s; cursor: pointer; }
+        .s3-card:hover { background: rgba(255,255,255,0.1); transform: scale(1.02); }
+        .s3-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.4); margin-bottom: 6px; }
+        .s3-val { font-size: 15px; font-weight: 500; }
+
+        /* =========================================
+           方案 4：Vercel Minimalist 极简黑白 (Pure geist)
+           特点：极致留白、完美间距、高级感
+        ========================================= */
+        #style-4 {
+            width: 520px;
+            background: #fff;
+            color: #000;
+            border-radius: 0; /* 极致扁平 */
+            padding: 40px;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.3);
+        }
+        .s4-title { font-size: 32px; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 30px; }
+        .s4-row { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; border-bottom: 1px solid #eaeaea; cursor: pointer; transition: 0.2s; }
+        .s4-row:hover { padding-left: 10px; color: #0070f3; }
+        .s4-label { font-size: 16px; font-weight: 600; }
+        .s4-val { font-family: monospace; font-size: 14px; opacity: 0.5; }
+
+        /* =========================================
+           方案 5：Cyber Terminal 赛博终端 (Hyper Script)
+           特点：充满极客感，带有渐变描边和光效
+        ========================================= */
+        #style-5 {
+            width: 450px;
+            padding: 1px;
+            background: linear-gradient(135deg, #0070f3, #79ffe1);
+            border-radius: 16px;
+            box-shadow: 0 0 30px rgba(0, 112, 243, 0.3);
+        }
+        .s5-inner { background: #000; border-radius: 15px; padding: 24px; height:100%; }
+        .s5-header { border-bottom: 1px solid #333; padding-bottom:12px; margin-bottom:16px; display:flex; gap:8px; }
+        .s5-dot { width:10px; height:10px; border-radius:50%; }
+        .s5-item { padding: 14px; margin-bottom: 8px; background: #0a0a0a; border: 1px solid #222; border-radius: 8px; transition: 0.2s; cursor: pointer; }
+        .s5-item:hover { border-color: #79ffe1; background: #111; box-shadow: 0 0 15px rgba(121, 255, 225, 0.1); }
+        .s5-label { font-size:10px; font-family: 'Fira Code', monospace; color: #79ffe1; text-transform: uppercase; margin-bottom: 4px; }
+        .s5-val { font-family: 'Fira Code', monospace; font-size: 13px; color: #eee; word-break: break-all; }
+
+        /* Toast */
+        .toast { position: fixed; bottom: 40px; background: #fff; color: #000; padding: 12px 24px; border-radius: 100px; font-weight: 800; box-shadow: 0 20px 40px rgba(0,0,0,0.5); transform: translateY(100px); transition: 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); z-index: 99999; }
+        .toast.show { transform: translateY(0); }
+
+    </style>
+</head>
+<body>
+
+    <nav class="lab-selector">
+        <button class="nav-btn active" onclick="showStyle(1)">模式 A：极简控制台</button>
+        <button class="nav-btn" onclick="showStyle(2)">模式 B：现代网格</button>
+        <button class="nav-btn" onclick="showStyle(3)">模式 C：玻璃拟态</button>
+        <button class="nav-btn" onclick="showStyle(4)">模式 D：Vercel 扁平</button>
+        <button class="nav-btn" onclick="showStyle(5)">模式 E：赛博增强</button>
+    </nav>
+
+    <div class="preview-area">
+        
+        <!-- 方案 1 -->
+        <div id="style-1" class="full-popup">
+            <div class="s1-header">
+                <svg width="24" height="24" stroke="#444" stroke-width="2" fill="none"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input class="s1-input" value="Base64" readonly>
+            </div>
+            <div class="s1-content">
+                <div class="s1-item active" onclick="copy('U3BhcmsgaXMgYXdlc29tZQ==')">
+                    <div class="s1-label"><span class="s1-icon">B</span> Base64 编码</div>
+                    <span class="s1-val">U3BhcmsgaXMgYXdlc29tZQ==</span>
+                </div>
+                <div class="s1-item" onclick="copy('2026-01-23 11:05:48')">
+                    <div class="s1-label"><span class="s1-icon">T</span> 时间戳转日期</div>
+                    <span class="s1-val">2026.01.23 11:05:48</span>
+                </div>
+                <div class="s1-item" onclick="copy('this_is_example')">
+                    <div class="s1-label"><span class="s1-icon">C</span> 蛇形命名 (Snake Case)</div>
+                    <span class="s1-val">this_is_example</span>
+                </div>
+                <div class="s1-item" onclick="copy('eyJhbGciOiJIUzI1NiJ9...')">
+                    <div class="s1-label"><span class="s1-icon">J</span> JWT 负荷解码</div>
+                    <span class="s1-val">{ "sub": "1234567890" }</span>
+                </div>
+            </div>
+            <div class="s1-footer">
+                <div>↑↓ 选择  ·  ↵ 复制并关闭</div>
+                <div>TeleScopeX v2.0</div>
+            </div>
+        </div>
+
+        <!-- 方案 2 -->
+        <div id="style-2" class="full-popup">
+            <div class="s2-input-card">
+                <div>原始输入内容</div>
+                <p>Hello Spark Plugin Developer!</p>
+            </div>
+            <div class="s2-item wide" onclick="copy('SGVsbG8gU3BhcmsgUGx1Z2luIERldmVsb3BlciE=')">
+                <div class="s2-label">Base64 编码结果</div>
+                <div class="s2-val">SGVsbG8gU3BhcmsgUGx1Z2luIERldmVsb3BlciE=</div>
+            </div>
+            <div class="s2-item" onclick="copy('1737601548')">
+                <div class="s2-label">当前秒级时间戳</div>
+                <div class="s2-val">1737601548</div>
+            </div>
+            <div class="s2-item" onclick="copy('hello-spark-plugin')">
+                <div class="s2-label">短横线命名</div>
+                <div class="s2-val">hello-spark-plugin</div>
+            </div>
+            <div class="s2-item" onclick="copy('28 字符')">
+                <div class="s2-label">内容长度</div>
+                <div class="s2-val" style="font-size: 24px; font-weight:800; color: #3b82f6;">28 CHARS</div>
+            </div>
+            <div class="s2-item" onclick="copy('JSON OK')">
+                <div class="s2-label">JSON 校验</div>
+                <div class="s2-val" style="color: #22c55e;">✓ VALID</div>
+            </div>
+        </div>
+
+        <!-- 方案 3 -->
+        <div id="style-3" class="full-popup">
+            <div class="s3-header">
+                <div class="s3-logo"></div>
+                <div>
+                    <h2 style="font-size:18px; font-weight:800;">智能转换</h2>
+                    <p style="font-size:12px; color:rgba(255,255,255,0.4);">自动识别 4 项建议</p>
+                </div>
+            </div>
+            <div class="s3-card" onclick="copy('Base64')">
+                <div class="s3-label">BASE64 转换</div>
+                <div class="s3-val">UzdtMjVkYTM2NDEy...</div>
+            </div>
+            <div class="s3-card" onclick="copy('JSON')">
+                <div class="s3-label">JSON 格式化</div>
+                <div class="s3-val">{ "status": "success" }</div>
+            </div>
+            <div class="s3-card" onclick="copy('Date')">
+                <div class="s3-label">ISO 时间格式</div>
+                <div class="s3-val">2026-01-23T11:05:48Z</div>
+            </div>
+        </div>
+
+        <!-- 方案 4 -->
+        <div id="style-4" class="full-popup">
+            <h1 class="s4-title">转换中心</h1>
+            <div class="s4-row" onclick="copy('B64')">
+                <div class="s4-label">Base64 编码</div>
+                <div class="s4-val">U3BhcmsgaXMgYX...</div>
+            </div>
+            <div class="s4-row" onclick="copy('Snake')">
+                <div class="s4-label">蛇形命名</div>
+                <div class="s4-val">input_content</div>
+            </div>
+            <div class="s4-row" onclick="copy('Date')">
+                <div class="s4-label">本地化时间</div>
+                <div class="s4-val">下午 11:05</div>
+            </div>
+            <div class="s4-row" style="border:none" onclick="copy('Len')">
+                <div class="s4-label">统计详情</div>
+                <div class="s4-val">32 词 / 144 字节</div>
+            </div>
+        </div>
+
+        <!-- 方案 5 -->
+        <div id="style-5" class="full-popup">
+            <div class="s5-inner">
+                <div class="s5-header">
+                    <div class="s5-dot" style="background:#ff5f56"></div>
+                    <div class="s5-dot" style="background:#ffbd2e"></div>
+                    <div class="s5-dot" style="background:#27c93f"></div>
+                    <span style="font-size:10px; color:#666; font-family:monospace; margin-left:10px;">TELESCOPEX_v2.0.sh</span>
+                </div>
+                <div class="s5-item" onclick="copy('B64')">
+                    <div class="s5-label">> ENCODE_BASE64</div>
+                    <div class="s5-val">U3BhcmsgaXMgYXdlc29tZQ==</div>
+                </div>
+                <div class="s5-item" onclick="copy('HEX')">
+                    <div class="s5-label">> COLOR_HEX_TO_RGB</div>
+                    <div class="s5-val">rgba(0, 112, 243, 1)</div>
+                </div>
+                <div class="s5-item" onclick="copy('JSON')">
+                    <div class="s5-label">> JSON_MINIFY</div>
+                    <div class="s5-val">{"id":1,"status":"ok"}</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="toast" class="toast">复制成功，窗口即将隐藏</div>
+
+    <script>
+        function showStyle(n) {
+            document.querySelectorAll('.nav-btn').forEach((b, i) => {
+                b.classList.toggle('active', i === n-1);
+            });
+            document.querySelectorAll('.full-popup').forEach(p => p.style.display = 'none');
+            
+            const target = document.getElementById('style-' + n);
+            target.style.display = (n === 2) ? 'grid' : 'flex';
+            
+            // 重新触发动画
+            target.classList.remove('animate');
+            void target.offsetWidth;
+            target.classList.add('animate');
+        }
+
+        function copy(txt) {
+            const t = document.getElementById('toast');
+            t.textContent = '已复制转换结果，模拟关闭中...';
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2000);
+            
+            console.log('复制内容:', txt);
+            
+            const input = document.createElement('textarea');
+            input.value = txt;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+        }
+
+        // 初始化
+        showStyle(1);
+    </script>
+</body>
+</html>
