@@ -10,6 +10,9 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  build: { outDir: 'dist_new', emptyOutDir: true },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+  },
   server: { port: 8086 }
 });

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    :root {
+      --zinc-900: #09090b;
+      --zinc-600: #52525b;
+      --zinc-500: #71717a;
+      --zinc-400: #a1a1aa;
+      --zinc-200: #e4e4e7;
+      --zinc-100: #f4f4f5;
+      --font-sans: -apple-system, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+    body {
+      font-family: var(--font-sans); 
+      background: transparent; 
+      color: var(--zinc-900);
+      height: 100vh; 
+      display: flex; 
+      flex-direction: column; 
+      overflow: hidden;
+      padding: 12px;
+    }
+    .container {
+      background: #ffffff;
+      border: 1px solid rgba(0,0,0,0.1);
+      border-radius: 16px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3);
+      position: relative;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+      overflow: hidden;
+    }
+    .container.shrinking {
+      transform: scale(0.9) translateY(10px);
+      opacity: 0;
+    }
+    .header { 
+      padding: 14px 18px; 
+      display: flex; 
+      align-items: center; 
+      border-bottom: 1px solid var(--zinc-100);
+    }
+    .dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; box-shadow: 0 0 10px rgba(16,185,129,0.5); margin-right: 10px; }
+    .title { font-size: 11px; font-weight: 800; color: var(--zinc-400); text-transform: uppercase; letter-spacing: 0.1em; }
+    .content { flex: 1; overflow-y: auto; padding: 8px; scrollbar-width: none; }
+    .content::-webkit-scrollbar { display: none; }
+    .item { 
+      padding: 10px 14px; border-radius: 12px; display: flex; flex-direction: column; 
+      cursor: pointer; transition: all 0.15s ease; margin-bottom: 2px;
+    }
+    .item:hover { background: var(--zinc-100); }
+    .item.active { background: var(--zinc-900); }
+    .item-label { font-size: 10px; font-weight: 700; color: var(--zinc-500); margin-bottom: 1px; }
+    .item.active .item-label { color: rgba(255,255,255,0.5); }
+    .item-val { 
+      font-family: ui-monospace, monospace; font-size: 12px; color: var(--zinc-900); 
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600;
+    }
+    .item.active .item-val { color: #ffffff; }
+    .footer { padding: 10px 18px; border-top: 1px solid var(--zinc-100); background: #fafafa; display: flex; gap: 8px; }
+    .kbd { font-size: 9px; font-weight: 800; color: var(--zinc-400); background: #fff; padding: 1px 4px; border: 1px solid var(--zinc-200); border-radius: 4px; }
+    #toast {
+      position: absolute; inset: 0; background: rgba(255, 255, 255, 0.98);
+      display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; gap: 10px;
+    }
+    .success-icon { width: 32px; height: 32px; border-radius: 50%; background: #10b981; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; font-weight: bold; }
+    .success-text { font-weight: 800; font-size: 13px; color: var(--zinc-900); }
+  </style>
+</head>
+<body>
+  <div class="container" id="main-container">
+    <div id="toast">
+      <div class="success-icon">✓</div>
+      <div class="success-text">已复制</div>
+    </div>
+    <div class="header">
+      <div class="dot"></div>
+      <span class="title">TeleScopeX Matrix</span>
+    </div>
+    <div class="content" id="list-container"></div>
+    <div class="footer"><span class="kbd">↑↓ Navigate</span><span class="kbd">↵ Copy</span></div>
+  </div>
+  <script>
+    let text = "";
+    let items = [];
+    let idx = 0;
+    const listContainer = document.getElementById('list-container');
+    const mainContainer = document.getElementById('main-container');
+    const toast = document.getElementById('toast');
+
+    window.init = (input) => {
+      text = input || "";
+      const freq = JSON.parse(localStorage.getItem('ts_freq') || '{}');
+      const raw = getRawResults();
+      items = raw.sort((a, b) => (freq[b.label] || 0) - (freq[a.label] || 0));
+      
+      if (text) {
+        const msg = new TextEncoder().encode(text);
+        crypto.subtle.digest('SHA-256', msg).then(buf => {
+          const sha = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+          items.push({ label: 'SHA-256 (摘要)', value: sha });
+          render();
+        });
+      }
+      render();
+    };
+
+    const getRawResults = () => {
+      if (!text) return [];
+      const res = [];
+      const add = (l, v) => { if (v && v.toString() !== text) res.push({ label: l, value: v.toString() }); };
+      try {
+        const p = JSON.parse(text);
+        add('JSON 美化', JSON.stringify(p, null, 2));
+        add('JSON 压缩', JSON.stringify(p));
+      } catch(e) {
+        if (text.includes('{') || text.includes('[')) {
+          try {
+            const f = new Function('return ' + text)();
+            if (typeof f === 'object') add('JSON 修复并美化', JSON.stringify(f, null, 2));
+          } catch(e2){}
+        }
+      }
+      const b64 = {
+        encode: (s) => { try { return btoa(unescape(encodeURIComponent(s))); } catch(e) { return null; } },
+        decode: (s) => {
+          try { return decodeURIComponent(escape(atob(s.replace(/\s/g, '')))); } 
+          catch(e) { try { return atob(s.replace(/\s/g, '')); } catch(e2) { return null; } }
+        }
+      };
+      add('Base64 编码', b64.encode(text));
+      add('Base64 解码', b64.decode(text));
+      add('URL 编码', encodeURIComponent(text));
+      try { add('URL 解码', decodeURIComponent(text)); } catch(e){}
+      if (/^\d{10,13}$/.test(text)) {
+        const d = new Date(text.length === 10 ? parseInt(text) * 1000 : parseInt(text));
+        if (!isNaN(d.getTime())) add('时间戳转日期', d.toLocaleString('zh-CN'));
+      } else {
+        const d = new Date(text);
+        if (!isNaN(d.getTime())) add('日期转时间戳', Math.floor(d.getTime()).toString());
+      }
+      if (text.split('.').length === 3) {
+        try {
+          const parts = text.split('.');
+          const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+          add('JWT 解析 (Payload)', JSON.stringify(payload, null, 2));
+        } catch(e) {}
+      }
+      if (text.length < 500) {
+        add('Unicode 编码', text.replace(/[^\u0000-\u007f]/g, c => "\\u" + c.charCodeAt(0).toString(16).padStart(4, '0')));
+        add('Unicode 解码', text.replace(/\\u([0-9a-fA-F]{4})/g, (_, g) => String.fromCharCode(parseInt(g, 16))));
+      }
+      return res;
+    };
+
+    const render = () => {
+      if (!items.length) { listContainer.innerHTML = '<div style="text-align:center;padding-top:60px;color:#ccc;font-size:11px;font-weight:900;">NO DATA</div>'; return; }
+      listContainer.innerHTML = '';
+      items.forEach((it, i) => {
+        const div = document.createElement('div');
+        div.className = 'item' + (i === idx ? ' active' : '');
+        const label = document.createElement('div'); label.className = 'item-label'; label.textContent = it.label;
+        const val = document.createElement('div'); val.className = 'item-val'; val.textContent = it.value;
+        div.appendChild(label); div.appendChild(val);
+        div.onclick = () => { idx = i; copy(); };
+        listContainer.appendChild(div);
+      });
+      const active = document.querySelector('.item.active');
+      if (active) active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    };
+
+    const copy = () => {
+      const item = items[idx];
+      if (!item) return;
+      const freq = JSON.parse(localStorage.getItem('ts_freq') || '{}');
+      freq[item.label] = (freq[item.label] || 0) + 1;
+      localStorage.setItem('ts_freq', JSON.stringify(freq));
+      
+      const ta = document.createElement('textarea'); ta.value = item.value;
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      
+      toast.style.display = 'flex';
+      setTimeout(() => {
+        mainContainer.classList.add('shrinking');
+        setTimeout(() => { window.location.href = 'telescope://close'; }, 250);
+      }, 500);
+    };
+
+    document.addEventListener('keydown', e => {
+      if (!items.length) return;
+      if (e.key === 'ArrowDown') { idx = (idx + 1) % items.length; render(); e.preventDefault(); }
+      else if (e.key === 'ArrowUp') { idx = (idx - 1 + items.length) % items.length; render(); e.preventDefault(); }
+      else if (e.key === 'Enter') copy();
+      else if (e.key === 'Escape') window.location.href = 'telescope://close';
+    });
+  </script>
+</body>
+</html>

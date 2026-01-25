@@ -23,7 +23,7 @@
 
 ### 安装依赖
 ```bash
-cd spark-plugin-ui--telescope-x
+cd spark-plugin-system--telescope-x
 npm install
 ```
 

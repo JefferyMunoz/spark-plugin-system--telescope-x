@@ -1,7 +1,11 @@
 {
-  "name": "spark-plugin-ui--telescope-x",
-  "version": "1.4.0",
-  "private": true,
+  "name": "spark-plugin-system--telescope-x",
+  "version": "1.4.8",
+  "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:JefferyMunoz/spark-plugin-system--telescope-x.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -4,16 +4,17 @@ import {
   Zap, Skull, RefreshCw, ArrowRightLeft,
   Globe, Lock, ShieldCheck,
   Copy, Trash2, ArrowRight, CornerDownRight, Hash, Activity, Terminal, PowerOff,
-  Command as CommandIcon, Keyboard
+  Command as CommandIcon, Keyboard, Sparkles
 } from 'lucide-react';
+import AssistantPage from './components/Assistant/AssistantPage';
 import dayjs from 'dayjs';
 import CryptoJS from 'crypto-js';
 
 const DESIGN = {
   animation: {
-    spring: { type: "spring", stiffness: 400, damping: 28 }
+    spring: { type: "spring", stiffness: 400, damping: 28 } as const
   }
-};
+} as const;
 
 const getSpark = () => {
   const target = (window as any).spark || {};
@@ -526,7 +527,7 @@ const KeyListener = () => {
 };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'transform' | 'ports' | 'keyboard'>('transform');
+  const [activeTab, setActiveTab] = useState<'transform' | 'ports' | 'keyboard' | 'assistant'>('transform');
   const [payload, setPayload] = useState<any>(null);
   const [toast, setToast] = useState({ show: false, message: "" });
 
@@ -537,16 +538,15 @@ export default function App() {
 
   useEffect(() => {
     const heights = {
-      transform: 607,
-      ports: 607,
-      keyboard: 600
+      transform: 600,
+      ports: 600,
+      keyboard: 600,
+      assistant: 600
     };
-    getSpark().setExpendHeight(heights[activeTab] || 607);
+    getSpark().setExpendHeight(heights[activeTab] || 650);
   }, [activeTab]);
 
   useEffect(() => {
-    getSpark().setExpendHeight(607);
-
     const handleEnter = (data: any) => {
       const code = (data?.code || '').toLowerCase();
       const content = data?.payload || '';
@@ -567,8 +567,8 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white text-zinc-900 font-sans selection:bg-zinc-900 selection:text-white p-6 overflow-x-hidden">
-      <header className="flex items-center justify-between mb-8">
+    <div className="min-h-full bg-white text-zinc-900 font-sans selection:bg-zinc-900 selection:text-white p-4 overflow-x-hidden">
+      <header className="flex items-center justify-center mb-6">
         <div className="flex gap-1.5 bg-zinc-100 p-1.5 rounded-[20px] border border-zinc-200/50 shadow-inner">
           <button
             onClick={() => setActiveTab('transform')}
@@ -594,11 +594,14 @@ export default function App() {
             <Keyboard size={14} />
             键盘监听
           </button>
-        </div>
-
-        <div className="flex items-center gap-2 px-4 py-2 bg-zinc-50 border border-zinc-100 rounded-full">
-          <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">闪搭X</span>
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,1)] animate-pulse"></div>
+          <button
+            onClick={() => setActiveTab('assistant')}
+            className={`flex items-center gap-2 px-6 py-2 rounded-[14px] text-[12px] font-black transition-all cursor-pointer
+              ${activeTab === 'assistant' ? 'bg-white text-zinc-900 shadow-md border border-zinc-200/50' : 'text-zinc-400 hover:text-zinc-600'}`}
+          >
+            <Sparkles size={14} className={activeTab === 'assistant' ? 'text-zinc-900 fill-zinc-900' : ''} />
+            辅助助手
+          </button>
         </div>
       </header>
 
@@ -615,8 +618,10 @@ export default function App() {
               <Transformer initialInput={payload} showToast={showToast} />
             ) : activeTab === 'ports' ? (
               <PortKiller showToast={showToast} />
-            ) : (
+            ) : activeTab === 'keyboard' ? (
               <KeyListener />
+            ) : (
+              <AssistantPage showToast={showToast} />
             )}
           </motion.div>
         </AnimatePresence>

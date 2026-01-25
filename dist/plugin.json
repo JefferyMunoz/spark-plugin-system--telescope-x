@@ -1,15 +1,15 @@
 {
-  "name": "spark-plugin-ui--telescope-x",
+  "name": "spark-plugin-system--telescope-x",
   "pluginName": "闪搭X",
   "author": "ssshuai",
-  "version": "1.1.0",
+  "version": "1.4.8",
   "description": "闪搭X - 极简开发者工具箱",
-  "main": "index.html",
-  "preload": "preload.cjs",
+  "main": "dist/index.html",
+  "preload": "public/preload.cjs",
   "logo": "logo.png",
-  "development": "http://localhost:8086",
   "pluginType": "system",
-  "entry": "main.js",
+  "entry": "main.cjs",
+  "repo": "git@github.com:JefferyMunoz/spark-plugin-system--telescope-x.git",
   "features": [
     {
       "code": "telescope-x",
