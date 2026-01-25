@@ -5,7 +5,7 @@ const pub = path.join(__dirname, '..', 'public');
 
 // Copy core files to dist and root
 const root = path.join(__dirname, '..');
-for (const f of ['plugin.json', 'preload.cjs', 'logo.png']) {
+for (const f of ['preload.cjs', 'logo.png']) {
     const src = path.join(pub, f);
     if (fs.existsSync(src)) {
         fs.copyFileSync(src, path.join(dist, f));
@@ -29,17 +29,29 @@ if (fs.existsSync(path.join(root, 'main.cjs'))) {
 // Read plugin.json metadata
 const pluginConfig = JSON.parse(fs.readFileSync(path.join(pub, 'plugin.json'), 'utf-8'));
 
-// Generate dist/package.json synced with plugin.json
+// Create a distribution version of plugin.json with flat paths
+const distPluginConfig = {
+    ...pluginConfig,
+    main: 'index.html',
+    preload: 'preload.cjs',
+    entry: 'main.cjs',
+    logo: 'logo.png'
+};
+
+// Write modified plugin.json to dist
+fs.writeFileSync(path.join(dist, 'plugin.json'), JSON.stringify(distPluginConfig, null, 2));
+
+// Generate dist/package.json synced with plugin.json (using flat paths)
 const pkgContent = {
     name: pluginConfig.name,
     pluginName: pluginConfig.pluginName,
     version: pluginConfig.version,
     description: pluginConfig.description,
-    // Exclude dev config for production build
-    main: pluginConfig.main || 'index.html',
-    preload: pluginConfig.preload || 'preload.cjs',
-    entry: pluginConfig.entry || 'main.cjs',
-    logo: pluginConfig.logo || 'logo.png',
+    // Use flat paths for production build
+    main: distPluginConfig.main,
+    preload: distPluginConfig.preload,
+    entry: distPluginConfig.entry,
+    logo: distPluginConfig.logo,
     pluginType: pluginConfig.pluginType || 'ui',
     features: pluginConfig.features || []
 };
