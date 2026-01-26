@@ -1,10 +1,12 @@
 import React, { useState, useMemo, Suspense, useEffect } from 'react';
+// @ts-ignore
 import ReactMarkdown from 'react-markdown';
+// @ts-ignore
 import { createHighlighter } from 'shiki';
-import { 
-  ChevronDown, 
-  ChevronRight, 
-  X, 
+import {
+  ChevronDown,
+  ChevronRight,
+  X,
   Lightbulb,
   GitMerge,
   Target,
@@ -97,11 +99,10 @@ function ToolbarButton({ active, onClick, children, title }: { active?: boolean;
     <button
       title={title}
       onClick={onClick}
-      className={`px-2 h-6 rounded-sm transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
-        active 
-          ? 'bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 shadow-sm' 
-          : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
-      }`}
+      className={`px-2 h-6 rounded-sm transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${active
+        ? 'bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
+        : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+        }`}
     >
       {children}
     </button>
@@ -113,11 +114,10 @@ function ToolbarToggle({ children, label, checked, onChange, title }: { children
     <button
       title={title || label}
       onClick={() => onChange(!checked)}
-      className={`px-2 h-7 rounded-md transition-all cursor-pointer border flex items-center gap-1.5 ${
-        checked 
-          ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30' 
-          : 'bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
-      }`}
+      className={`px-2 h-7 rounded-md transition-all cursor-pointer border flex items-center gap-1.5 ${checked
+        ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30'
+        : 'bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
+        }`}
     >
       {children}
       <span className="text-[10px] font-bold uppercase tracking-tight hidden md:inline">{label}</span>
@@ -163,7 +163,7 @@ function CodeBlock({ node, inline, className, children, theme, ...props }: any) 
   const match = /language-(\w+)/.exec(className || '');
   const lang = match ? match[1] : '';
   const code = String(children).replace(/\n$/, '');
-  
+
   // 核心修改：如果是 AI 诊断区域内的代码块，强制以内联样式展示，防止其占据一整行
   return (
     <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[12px] font-mono text-pink-500 dark:text-pink-400 mx-1 align-baseline border border-slate-200 dark:border-slate-700" {...props}>
@@ -178,18 +178,20 @@ function CodeBlock({ node, inline, className, children, theme, ...props }: any) 
 
 const MultiFileDiffLoader = React.lazy(async () => {
   try {
+    // @ts-ignore
     const mod = await import('@pierre/diffs/react');
+    // @ts-ignore
     const diffsMod = await import('@pierre/diffs');
     const parsePatchFiles = diffsMod.parsePatchFiles;
 
-    return { 
+    return {
       default: (props: any) => {
         const parsedFiles = useMemo(() => {
           try {
             // 预检查：确保有基本的 diff 结构，如果没有，尝试作为纯文本（Context）处理
             let patchText = props.patch || '';
             const hasHeader = patchText.includes('diff --git') || patchText.startsWith('---');
-            
+
             if (!hasHeader) {
               // 自动包装非 diff 文本
               const lines = patchText.split('\n');
@@ -198,7 +200,7 @@ const MultiFileDiffLoader = React.lazy(async () => {
                 if (l.startsWith('+') || l.startsWith('-') || l.startsWith(' ')) return l;
                 return ' ' + l;
               }).join('\n');
-              
+
               patchText = [
                 'diff --git a/snippet b/snippet',
                 '--- a/snippet',
@@ -207,30 +209,30 @@ const MultiFileDiffLoader = React.lazy(async () => {
                 fixedBody
               ].join('\n');
             }
-            
+
             return parsePatchFiles(patchText);
           } catch (e) {
             console.warn('Diff parse failed, rendering as raw:', e);
-            return []; 
+            return [];
           }
         }, [props.patch]);
 
         const allFiles: any[] = [];
         parsedFiles.forEach((p: any) => { if (p.files) allFiles.push(...p.files); });
-        
+
         if (allFiles.length === 0) {
-           // Fallback for failed parse or empty diff
-           return (
-             <div className="p-3 text-xs font-mono whitespace-pre overflow-auto text-slate-600 dark:text-slate-300">
-               {props.patch}
-             </div>
-           );
+          // Fallback for failed parse or empty diff
+          return (
+            <div className="p-3 text-xs font-mono whitespace-pre overflow-auto text-slate-600 dark:text-slate-300">
+              {props.patch}
+            </div>
+          );
         }
-        
+
         return (
           <div className="space-y-1">
             {allFiles.map((file, idx) => (
-              <mod.FileDiff 
+              <mod.FileDiff
                 key={idx}
                 fileDiff={file}
                 options={props.options}
@@ -239,7 +241,7 @@ const MultiFileDiffLoader = React.lazy(async () => {
             ))}
           </div>
         );
-      } 
+      }
     };
   } catch (e) {
     return { default: () => <div className="p-4 text-red-500">Diff 组件加载失败</div> };
@@ -252,7 +254,7 @@ function PierreSnippetRenderer({ snippet, file, theme, title, variant = 'default
     if (snippet.includes('diff --git')) return snippet;
     const f = file || 'file.ts';
     if (snippet.includes('@@')) {
-       return `diff --git a/${f} b/${f}\n--- a/${f}\n+++ b/${f}\n${snippet}`;
+      return `diff --git a/${f} b/${f}\n--- a/${f}\n+++ b/${f}\n${snippet}`;
     }
     return `diff --git a/${f} b/${f}\n--- a/${f}\n+++ b/${f}\n@@ -1,1 +1,1 @@\n${snippet}`;
   }, [snippet, file]);
@@ -262,29 +264,26 @@ function PierreSnippetRenderer({ snippet, file, theme, title, variant = 'default
   const isSuggestion = variant === 'suggestion';
 
   return (
-    <div className={`rounded-md border overflow-hidden shadow-sm group ${
-      isSuggestion 
-        ? 'border-emerald-200 dark:border-emerald-900/50 bg-white dark:bg-[#0d1117]' 
-        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0d1117]'
-    }`}>
-      <div className={`px-3 py-1.5 border-b flex items-center justify-between ${
-        isSuggestion
-          ? 'bg-emerald-50/50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-900/50'
-          : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+    <div className={`rounded-md border overflow-hidden shadow-sm group ${isSuggestion
+      ? 'border-emerald-200 dark:border-emerald-900/50 bg-white dark:bg-[#0d1117]'
+      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0d1117]'
       }`}>
+      <div className={`px-3 py-1.5 border-b flex items-center justify-between ${isSuggestion
+        ? 'bg-emerald-50/50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-900/50'
+        : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+        }`}>
         <div className="flex items-center gap-2">
           {isSuggestion ? <Lightbulb size={12} className="text-emerald-500" /> : <FileCode size={12} className="text-slate-500" />}
-          <span className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
-            isSuggestion ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'
-          }`}>
+          <span className={`text-[10px] font-mono font-bold uppercase tracking-wider ${isSuggestion ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500'
+            }`}>
             {title || (file || 'CONTEXT')}
           </span>
         </div>
       </div>
       <div className="min-h-[60px] max-h-[400px] overflow-auto relative">
         <Suspense fallback={<div className="p-4 text-xs text-slate-400">Loading code...</div>}>
-          <MultiFileDiffLoader 
-            patch={patch} 
+          <MultiFileDiffLoader
+            patch={patch}
             options={{
               theme: FIXED_THEME,
               themeType: theme,
@@ -316,19 +315,19 @@ function PierreSnippetRenderer({ snippet, file, theme, title, variant = 'default
 // Main Components
 // --------------------------------------------------------------------------
 
-function ComplianceRow({ 
-  finding, 
-  index, 
-  theme, 
-  isIgnored, 
+function ComplianceRow({
+  finding,
+  index,
+  theme,
+  isIgnored,
   onIgnore,
   diffOptions,
   setDiffOptions
-}: { 
-  finding: Finding, 
-  index: number, 
-  theme: 'light' | 'dark', 
-  isIgnored: boolean, 
+}: {
+  finding: Finding,
+  index: number,
+  theme: 'light' | 'dark',
+  isIgnored: boolean,
   onIgnore: () => void,
   diffOptions: DiffOptions,
   setDiffOptions: (o: DiffOptions) => void
@@ -368,26 +367,26 @@ function ComplianceRow({
 
   return (
     <div className={`group border-b border-slate-100 dark:border-slate-800/50 last:border-0 transition-all ${isOpen ? 'bg-slate-50/20 dark:bg-slate-900/10' : ''} ${isIgnored ? 'opacity-50 grayscale' : ''}`}>
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center gap-4 px-6 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-white/5"
       >
         <div className={`flex-shrink-0 ${severity.color}`}>
-           <severity.icon size={16} />
+          <severity.icon size={16} />
         </div>
-        
+
         <div className="flex-1 min-w-0 flex items-center gap-3">
-           <span className={`flex-shrink-0 text-[10px] font-bold uppercase tracking-wider ${severity.color} bg-opacity-10 px-2 py-0.5 rounded-sm bg-slate-100 dark:bg-slate-800`}>
-             {severity.label}
-           </span>
-           <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate flex-1">
-             {shortTitle}
-           </h3>
+          <span className={`flex-shrink-0 text-[10px] font-bold uppercase tracking-wider ${severity.color} bg-opacity-10 px-2 py-0.5 rounded-sm bg-slate-100 dark:bg-slate-800`}>
+            {severity.label}
+          </span>
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate flex-1">
+            {shortTitle}
+          </h3>
         </div>
 
         <div className="flex items-center gap-4 flex-shrink-0">
-           {isIgnored && <Badge variant="outline" className="text-[10px]">已忽略</Badge>}
-           {isOpen ? <ChevronDown size={16} className="text-slate-400" /> : <ChevronRight size={16} className="text-slate-400" />}
+          {isIgnored && <Badge variant="outline" className="text-[10px]">已忽略</Badge>}
+          {isOpen ? <ChevronDown size={16} className="text-slate-400" /> : <ChevronRight size={16} className="text-slate-400" />}
         </div>
       </button>
 
@@ -400,7 +399,7 @@ function ComplianceRow({
                   <Zap size={14} className="text-emerald-500" />
                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">AI 诊断与建议</h4>
                 </div>
-                
+
                 <div className="flex items-center gap-2 scale-90 origin-right opacity-60 hover:opacity-100 transition-opacity">
                   <ButtonGroup>
                     <ToolbarButton active={diffOptions.diffStyle === 'unified'} onClick={() => updateOption('diffStyle', 'unified')} title="单栏">
@@ -418,8 +417,8 @@ function ComplianceRow({
               <div className="px-4 py-3 rounded-lg bg-white dark:bg-[#0d1117] border border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-300 leading-relaxed shadow-sm">
                 <ReactMarkdown
                   components={{
-                    p: ({children}) => <div className="mb-1 last:mb-0">{children}</div>,
-                    code: (props) => <CodeBlock {...props} theme={theme} />
+                    p: ({ children }: any) => <div className="mb-1 last:mb-0">{children}</div>,
+                    code: (props: any) => <CodeBlock {...props} theme={theme} />
                   }}
                 >
                   {finding.suggestion ? cleanMessage : finding.message}
@@ -433,10 +432,10 @@ function ComplianceRow({
                   <FileCode size={14} className="text-slate-400" />
                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest">当前变更快照 (Current Diff)</h4>
                 </div>
-                <PierreSnippetRenderer 
-                  snippet={finding.snippet} 
-                  file={finding.file} 
-                  theme={theme} 
+                <PierreSnippetRenderer
+                  snippet={finding.snippet}
+                  file={finding.file}
+                  theme={theme}
                   title="新人提交的代码"
                   options={diffOptions}
                 />
@@ -455,18 +454,18 @@ function ComplianceRow({
                       <Lightbulb size={14} className="text-emerald-500" />
                       <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">AI 建议修复预览 (AI Suggestion Diff)</h4>
                     </div>
-                    <button 
-                      onClick={handleCopy} 
+                    <button
+                      onClick={handleCopy}
                       className="text-[10px] font-bold text-emerald-600/70 hover:text-emerald-600 transition-colors flex items-center gap-1 opacity-60 hover:opacity-100"
                     >
                       {copied ? <Check size={12} /> : <Copy size={12} />}
                       {copied ? '复制修复代码' : '复制建议'}
                     </button>
                   </div>
-                  <PierreSnippetRenderer 
-                    snippet={generateSuggestionDiff(finding.file, finding.snippet, finding.suggestion)} 
-                    file={finding.file} 
-                    theme={theme} 
+                  <PierreSnippetRenderer
+                    snippet={generateSuggestionDiff(finding.file, finding.snippet, finding.suggestion)}
+                    file={finding.file}
+                    theme={theme}
                     title="建议修复后的代码"
                     variant="suggestion"
                     options={diffOptions}
@@ -476,15 +475,15 @@ function ComplianceRow({
             )}
 
             <div className="flex justify-end pt-2">
-               <Button 
-                 variant="ghost" 
-                 size="sm" 
-                 onClick={() => onIgnore()} 
-                 className="text-slate-400 hover:text-slate-600 h-8 text-xs font-bold uppercase tracking-wider"
-               >
-                 <X size={12} className="mr-1.5" />
-                 {isIgnored ? '撤销忽略' : '忽略此项'}
-               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onIgnore()}
+                className="text-slate-400 hover:text-slate-600 h-8 text-xs font-bold uppercase tracking-wider"
+              >
+                <X size={12} className="mr-1.5" />
+                {isIgnored ? '撤销忽略' : '忽略此项'}
+              </Button>
             </div>
           </div>
         </div>
@@ -493,21 +492,21 @@ function ComplianceRow({
   );
 }
 
-function CategorySection({ 
-  title, 
+function CategorySection({
+  title,
   icon: Icon,
-  findings, 
-  theme, 
-  ignoredSet, 
+  findings,
+  theme,
+  ignoredSet,
   onIgnoreFinding,
   diffOptions,
   setDiffOptions
-}: { 
-  title: string, 
+}: {
+  title: string,
   icon: any,
-  findings: Finding[], 
-  theme: 'light' | 'dark', 
-  ignoredSet: Set<string>, 
+  findings: Finding[],
+  theme: 'light' | 'dark',
+  ignoredSet: Set<string>,
   onIgnoreFinding: any,
   diffOptions: DiffOptions,
   setDiffOptions: (o: DiffOptions) => void
@@ -529,13 +528,13 @@ function CategorySection({
       </div>
       <div>
         {findings.map((f, i) => (
-          <ComplianceRow 
-            key={getFindingId(f, i)} 
-            finding={f} 
-            index={i} 
-            theme={theme} 
-            isIgnored={ignoredSet.has(getFindingId(f, i))} 
-            onIgnore={() => onIgnoreFinding(getFindingId(f, i))} 
+          <ComplianceRow
+            key={getFindingId(f, i)}
+            finding={f}
+            index={i}
+            theme={theme}
+            isIgnored={ignoredSet.has(getFindingId(f, i))}
+            onIgnore={() => onIgnoreFinding(getFindingId(f, i))}
             diffOptions={diffOptions}
             setDiffOptions={setDiffOptions}
           />
@@ -545,13 +544,13 @@ function CategorySection({
   );
 }
 
-export default function FindingsView({ 
-  findings, 
-  theme, 
-  ignoredFindingIds, 
-  onIgnoreFinding, 
-  isLoading, 
-  context 
+export default function FindingsView({
+  findings,
+  theme,
+  ignoredFindingIds,
+  onIgnoreFinding,
+  isLoading,
+  context
 }: FindingsViewProps) {
   const ignoredSet = useMemo(() => new Set(ignoredFindingIds || []), [ignoredFindingIds]);
   const [diffOptions, setDiffOptions] = useState<DiffOptions>(() => {
@@ -587,48 +586,48 @@ export default function FindingsView({
       <div className="max-w-4xl mx-auto pb-20">
         {context && (
           <div className="mb-8">
-             <div className="flex items-center gap-2 mb-3 px-1">
-               <GitMerge size={14} className="text-slate-400" />
-               <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">本次变更脉络</h2>
-             </div>
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {[
-                  { icon: Target, label: '变更目的', val: context.why, color: 'emerald' },
-                  { icon: FileCode, label: '技术路径', val: context.what, color: 'blue' },
-                  { icon: Zap, label: '业务影响', val: context.impact, color: 'amber' }
-                ].map((n, i) => (
-                  <div key={i} className="bg-white dark:bg-[#0d1117] p-4 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className={`w-5 h-5 rounded bg-\${n.color}-500/10 flex items-center justify-center text-\${n.color}-600`}>
-                        <n.icon size={12} />
-                      </div>
-                      <div className="text-[10px] font-bold text-slate-400 uppercase">{n.label}</div>
+            <div className="flex items-center gap-2 mb-3 px-1">
+              <GitMerge size={14} className="text-slate-400" />
+              <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">本次变更脉络</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {[
+                { icon: Target, label: '变更目的', val: context.why, color: 'emerald' },
+                { icon: FileCode, label: '技术路径', val: context.what, color: 'blue' },
+                { icon: Zap, label: '业务影响', val: context.impact, color: 'amber' }
+              ].map((n, i) => (
+                <div key={i} className="bg-white dark:bg-[#0d1117] p-4 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-5 h-5 rounded bg-\${n.color}-500/10 flex items-center justify-center text-\${n.color}-600`}>
+                      <n.icon size={12} />
                     </div>
-                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-relaxed">{n.val}</div>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase">{n.label}</div>
                   </div>
-                ))}
-             </div>
+                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-relaxed">{n.val}</div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
         <div className="space-y-4">
-          <CategorySection 
-            title="安全与合规性检查" 
+          <CategorySection
+            title="安全与合规性检查"
             icon={ShieldAlert}
-            findings={categorized.security} 
-            theme={theme} 
-            ignoredSet={ignoredSet} 
-            onIgnoreFinding={onIgnoreFinding} 
+            findings={categorized.security}
+            theme={theme}
+            ignoredSet={ignoredSet}
+            onIgnoreFinding={onIgnoreFinding}
             diffOptions={diffOptions}
             setDiffOptions={setDiffOptions}
           />
-          <CategorySection 
-            title="业务逻辑完整性" 
+          <CategorySection
+            title="业务逻辑完整性"
             icon={GitMerge}
-            findings={categorized.logic} 
-            theme={theme} 
-            ignoredSet={ignoredSet} 
-            onIgnoreFinding={onIgnoreFinding} 
+            findings={categorized.logic}
+            theme={theme}
+            ignoredSet={ignoredSet}
+            onIgnoreFinding={onIgnoreFinding}
             diffOptions={diffOptions}
             setDiffOptions={setDiffOptions}
           />
@@ -645,9 +644,9 @@ export default function FindingsView({
         </div>
 
         <div className="mt-12 text-center pb-8">
-           <p className="text-[10px] text-slate-400 font-medium">
-             由 TeleScopeX AI 引擎生成
-           </p>
+          <p className="text-[10px] text-slate-400 font-medium">
+            由 TeleScopeX AI 引擎生成
+          </p>
         </div>
       </div>
     </div>

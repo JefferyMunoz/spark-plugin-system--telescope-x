@@ -1,8 +1,8 @@
-export type InputType = 
-  | 'base64' 
-  | 'json' 
-  | 'url-encoded' 
-  | 'timestamp' 
+export type InputType =
+  | 'base64'
+  | 'json'
+  | 'url-encoded'
+  | 'timestamp'
   | 'variable-name'
   | 'date-string'
   | 'hex'
@@ -11,14 +11,14 @@ export type InputType =
 
 export interface DetectionResult {
   types: InputType[];
-  confidence: Record<InputType, number>;
+  confidence: Partial<Record<InputType, number>>;
 }
 
 export function detectInputType(input: string): DetectionResult {
   const types: InputType[] = [];
   const confidence: Record<string, number> = {};
   const trimmed = input.trim();
-  
+
   if (!trimmed) {
     return { types: ['text'], confidence: { text: 1 } };
   }
@@ -30,7 +30,7 @@ export function detectInputType(input: string): DetectionResult {
         types.push('base64');
         confidence['base64'] = trimmed.length % 4 === 0 ? 0.9 : 0.6;
       }
-    } catch {}
+    } catch { }
   }
 
   if (/^[\[{]/.test(trimmed)) {
@@ -38,7 +38,7 @@ export function detectInputType(input: string): DetectionResult {
       JSON.parse(trimmed);
       types.push('json');
       confidence['json'] = 0.95;
-    } catch {}
+    } catch { }
   }
 
   if (/%[0-9A-Fa-f]{2}/.test(trimmed)) {
@@ -67,12 +67,12 @@ export function detectInputType(input: string): DetectionResult {
     confidence['date-string'] = 0.85;
   }
 
-  const isVariableName = 
+  const isVariableName =
     /^[a-z][a-zA-Z0-9]*$/.test(trimmed) ||
     /^[a-z]+(_[a-z]+)+$/.test(trimmed) ||
     /^[a-z]+(-[a-z]+)+$/.test(trimmed) ||
     /^[A-Z][a-zA-Z0-9]*$/.test(trimmed);
-  
+
   if (isVariableName && trimmed.length >= 2 && trimmed.length <= 50) {
     types.push('variable-name');
     confidence['variable-name'] = 0.7;
