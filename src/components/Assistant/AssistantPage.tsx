@@ -48,15 +48,15 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
 
   const handleInstall = async () => {
     setIsInstalling(true);
-    const success = await DependencyManager.installAgent((p) => {
+    const result = await DependencyManager.installAgent((p) => {
       setProgress(p);
     });
     setIsInstalling(false);
-    if (success) {
+    if (result.success) {
       showToast("辅助助手核心安装完成！请重启 Spark");
       setIsInstalled(true);
     } else {
-      showToast("安装失败，请检查网络连接");
+      showToast(result.error ? `安装失败: ${result.error}` : "安装失败，请检查网络连接");
     }
   };
 

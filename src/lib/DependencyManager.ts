@@ -18,19 +18,22 @@ export class DependencyManager {
     }
   }
 
-  static async installAgent(onProgress: (data: ProgressData) => void): Promise<boolean> {
+  static async installAgent(onProgress: (data: ProgressData) => void): Promise<{ success: boolean, error?: string }> {
     try {
       const cleanup = getSpark().onEvent?.('dependency-progress', (data: ProgressData) => {
         onProgress(data);
       });
 
-      const res = await getSpark().installDependencies?.();
+      const res = await getSpark().installDependencies?.({ name: 'browser-agent' });
       
       if (cleanup) cleanup();
-      return res?.success || false;
-    } catch (e) {
+      return {
+        success: res?.success || false,
+        error: res?.error
+      };
+    } catch (e: any) {
       console.error('Installation failed', e);
-      return false;
+      return { success: false, error: e.message };
     }
   }
 

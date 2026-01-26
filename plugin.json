@@ -7,6 +7,10 @@
   "main": "dist/index.html",
   "preload": "public/preload.cjs",
   "logo": "logo.png",
+  "pluginSetting": {
+    "height": 665,
+    "width": 845
+  },
   "pluginType": "system",
   "entry": "main.cjs",
   "repo": "git@github.com:JefferyMunoz/spark-plugin-system--telescope-x.git",
