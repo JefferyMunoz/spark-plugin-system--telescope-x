@@ -18,17 +18,26 @@ const DESIGN = {
 
 const getSpark = () => {
   const target = (window as any).spark || {};
-  const fallback = {
-    copyText: (text: string) => navigator.clipboard.writeText(text),
-    readText: () => navigator.clipboard.readText(),
-    getAllPorts: async () => [],
-    killProcess: async (pid: string) => true,
-    onPluginEnter: (cb: any) => { },
-    setExpendHeight: (h: number) => { }
-  };
   return new Proxy(target, {
     get(t, prop) {
-      return t[prop] || (fallback as any)[prop] || (() => { });
+      if (typeof t[prop] === 'function') return t[prop].bind(t);
+      if (prop in t) return t[prop];
+      
+      const fallback: Record<string, any> = {
+        copyText: (text: string) => navigator.clipboard.writeText(text),
+        readText: () => navigator.clipboard.readText(),
+        getAllPorts: async () => [],
+        killProcess: async (pid: string) => true,
+        onPluginEnter: (cb: any) => { },
+        setExpendHeight: (h: number) => { },
+        installDependencies: async (data: any) => ({ success: false, error: 'Environment not ready' }),
+        ping: () => 'pong-fallback'
+      };
+      
+      if (prop in fallback) return fallback[prop as string];
+      return (...args: any[]) => {
+        console.warn(`[闪搭X] 尝试调用缺失的接口: ${String(prop)}`, args);
+      };
     }
   }) as any;
 };
@@ -113,6 +122,9 @@ const PortKiller = ({ showToast }: any) => {
   const refresh = async () => {
     setLoading(true);
     console.log('[闪搭X] 正在刷新端口数据...');
+    console.log('[闪搭X] window.spark 对象:', window.spark);
+    console.log('[闪搭X] getAllPorts 类型:', typeof window.spark?.getAllPorts);
+    
     const minWait = new Promise(resolve => setTimeout(resolve, 600));
     try {
       const res = await getSpark().getAllPorts();
@@ -140,11 +152,11 @@ const PortKiller = ({ showToast }: any) => {
   const filtered = ports.filter(p => (p.port || '').includes(filter) || (p.name || '').toLowerCase().includes(filter.toLowerCase()));
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
+    <div className="flex flex-col h-full gap-4 overflow-hidden">
+      <div className="flex items-center justify-between pb-2 border-b border-zinc-100 shrink-0">
         <div className="flex items-center gap-2">
           <Skull size={18} className="text-red-600" strokeWidth={3} />
-          <h2 className="text-[13px] font-black text-zinc-900 tracking-tight">端口扫描</h2>
+          <h2 className="text-[13px] font-black text-zinc-900 tracking-tight">端口治理</h2>
           <Tooltip content="扫描系统当前所有正在监听的端口及其对应的进程" position="bottom">
             <ShieldCheck size={14} className="text-zinc-400 cursor-help" />
           </Tooltip>
@@ -153,7 +165,7 @@ const PortKiller = ({ showToast }: any) => {
           <Tooltip content="支持搜索端口号、进程名称或 PID" position="bottom" align="end">
             <input
               autoFocus
-              className="text-[11px] bg-zinc-100/50 border border-zinc-200 rounded-xl px-4 py-2.5 w-48 focus:bg-white outline-none transition-all font-bold"
+              className="text-[11px] bg-zinc-100/50 border border-zinc-200 rounded-xl px-4 py-3.5 w-48 focus:bg-white outline-none transition-all font-bold"
               placeholder="搜索进程或端口..."
               value={filter}
               onChange={e => setFilter(e.target.value)}
@@ -171,7 +183,7 @@ const PortKiller = ({ showToast }: any) => {
         </div>
       </div>
 
-      <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-3 mb-2 flex items-start gap-3">
+      <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-3 flex items-start gap-3 shrink-0">
         <div className="bg-blue-500 p-1.5 rounded-lg text-white">
           <Activity size={14} strokeWidth={3} />
         </div>
@@ -183,7 +195,7 @@ const PortKiller = ({ showToast }: any) => {
         </div>
       </div>
 
-      <div className="flex-1 bg-zinc-50 border border-zinc-200 rounded-[24px] p-3 h-[320px] overflow-y-auto custom-scrollbar">
+      <div className="flex-1 bg-zinc-50 border border-zinc-200 rounded-[24px] p-3 overflow-y-auto custom-scrollbar h-[350px] max-h-[350px]">
         <div className="grid grid-cols-3 gap-2">
           {filtered.map(p => {
             const displayName = getDisplayName(p.name);
@@ -296,8 +308,8 @@ const Transformer = ({ initialInput, showToast }: any) => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
+    <div className="flex flex-col h-full gap-4 overflow-hidden">
+      <div className="flex items-center justify-between pb-2 border-b border-zinc-100 shrink-0">
         <div className="flex items-center gap-2">
           <Zap size={18} className="text-zinc-900 fill-zinc-900" />
           <h2 className="text-[13px] font-black text-zinc-900 tracking-tight">内容转换</h2>
@@ -324,57 +336,59 @@ const Transformer = ({ initialInput, showToast }: any) => {
         </div>
       </div>
 
-      {mode === 'password' ? (
-        <div className="flex flex-col items-center justify-center h-[300px] bg-zinc-50 border border-zinc-200 rounded-xl border-dashed gap-6">
-          <div className="flex flex-col items-center gap-3">
-            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">生成的随机强密码</span>
-            <div className="text-2xl font-mono font-black text-zinc-900 tracking-widest bg-white px-8 py-4 rounded-2xl border border-zinc-100 shadow-sm selection:bg-zinc-900 selection:text-white min-w-[320px] text-center">
-              {result}
+      <div className="flex-1 min-h-0 flex flex-col">
+        {mode === 'password' ? (
+          <div className="flex flex-col items-center justify-center h-full bg-zinc-50 border border-zinc-200 rounded-xl border-dashed gap-6">
+            <div className="flex flex-col items-center gap-3">
+              <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">生成的随机强密码</span>
+              <div className="text-2xl font-mono font-black text-zinc-900 tracking-widest bg-white px-8 py-4 rounded-2xl border border-zinc-100 shadow-sm selection:bg-zinc-900 selection:text-white min-w-[320px] text-center">
+                {result}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <ActionButton onClick={() => {
+                const pwd = actions.password();
+                setResult(pwd);
+                getSpark().copyText(pwd);
+                showToast("新密码已生成并复制");
+              }} icon={RefreshCw} variant="primary">重新生成并复制</ActionButton>
             </div>
           </div>
-          <div className="flex gap-2">
-            <ActionButton onClick={() => {
-              const pwd = actions.password();
-              setResult(pwd);
-              getSpark().copyText(pwd);
-              showToast("新密码已生成并复制");
-            }} icon={RefreshCw} variant="primary">重新生成并复制</ActionButton>
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-[1fr_auto_1fr] gap-4 h-[300px] items-stretch">
-          <div className="flex flex-col gap-2 h-full">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">输入源</span>
-              <Trash2 size={14} className="text-zinc-300 cursor-pointer hover:text-red-500 transition-colors" onClick={() => { setSource(''); setResult(''); }} />
+        ) : (
+          <div className="grid grid-cols-[1fr_auto_1fr] gap-4 h-[240px] max-h-[240px] items-stretch min-h-0">
+            <div className="flex flex-col gap-2 min-h-0">
+              <div className="flex items-center justify-between px-1 shrink-0">
+                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">输入源</span>
+                <Trash2 size={14} className="text-zinc-300 cursor-pointer hover:text-red-500 transition-colors" onClick={() => { setSource(''); setResult(''); }} />
+              </div>
+              <textarea
+                className="p-4 text-[12px] font-mono bg-zinc-50 border border-zinc-200 rounded-lg outline-none focus:bg-white focus:border-zinc-300 transition-all custom-scrollbar resize-none font-bold text-zinc-800 w-full overflow-y-auto h-[220px] max-h-[220px]"
+                value={source}
+                onChange={e => setSource(e.target.value)}
+                placeholder="粘贴数据..."
+              />
             </div>
-            <textarea
-              className="flex-1 p-4 text-[12px] font-mono bg-zinc-50 border border-zinc-200 rounded-lg outline-none focus:bg-white focus:border-zinc-300 transition-all custom-scrollbar resize-none font-bold text-zinc-800 h-full"
-              value={source}
-              onChange={e => setSource(e.target.value)}
-              placeholder="粘贴数据..."
-            />
-          </div>
 
-          <div className="flex flex-col items-center justify-center gap-3 self-center pointer-events-none">
-            <div className="w-12 h-12 bg-white border border-zinc-200 rounded-full flex items-center justify-center shadow-md text-zinc-900">
-              <ArrowRight size={24} strokeWidth={2.5} />
+            <div className="flex flex-col items-center justify-center gap-3 self-center pointer-events-none shrink-0">
+              <div className="w-10 h-10 bg-white border border-zinc-200 rounded-full flex items-center justify-center shadow-md text-zinc-900">
+                <ArrowRight size={20} strokeWidth={2.5} />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 min-h-0">
+              <div className="flex items-center justify-between px-1 shrink-0">
+                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">输出结果</span>
+                <Copy size={16} className="text-zinc-400 cursor-pointer hover:text-zinc-900 transition-colors" onClick={() => { getSpark().copyText(result); showToast("已复制"); }} />
+              </div>
+              <div className="p-4 text-[12px] font-mono bg-zinc-50 border border-zinc-200 rounded-lg custom-scrollbar overflow-y-auto whitespace-pre-wrap break-all font-bold text-zinc-800 border-dashed w-full h-[220px] max-h-[220px]">
+                {result || <span className="text-zinc-300 italic font-medium text-[11px]">等待转换...</span>}
+              </div>
             </div>
           </div>
+        )}
+      </div>
 
-          <div className="flex flex-col gap-2 h-full">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">输出结果</span>
-              <Copy size={16} className="text-zinc-400 cursor-pointer hover:text-zinc-900 transition-colors" onClick={() => { getSpark().copyText(result); showToast("已复制"); }} />
-            </div>
-            <div className="flex-1 p-4 text-[12px] font-mono bg-zinc-50 border border-zinc-200 rounded-lg custom-scrollbar overflow-auto whitespace-pre-wrap break-all font-bold text-zinc-800 border-dashed h-full">
-              {result || <span className="text-zinc-300 italic font-medium text-[11px]">等待转换...</span>}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="flex items-center justify-center gap-3 pt-4 border-t border-zinc-100">
+      <div className="flex items-center justify-center gap-3 pt-6 pb-6 border-t border-zinc-100 shrink-0">
         {mode === 'json' && (
           <>
             <ActionButton onClick={() => transform(actions.jsonBeauty, "美化完成")} icon={RefreshCw} variant="primary">美化 JSON</ActionButton>
@@ -537,13 +551,16 @@ export default function App() {
   };
 
   useEffect(() => {
-    const heights = {
-      transform: 600,
-      ports: 600,
-      keyboard: 600,
-      assistant: 600
-    };
-    getSpark().setExpendHeight(heights[activeTab] || 650);
+    // 强制自检：撕开接口丢失的黑盒
+    const s = getSpark();
+    console.log('[闪搭X] 核心自检...', {
+      ping: typeof s.ping,
+      install: typeof s.installDependencies,
+      ports: typeof s.getAllPorts,
+      keys: Object.keys(s)
+    });
+    
+    getSpark().setExpendHeight(620);
   }, [activeTab]);
 
   useEffect(() => {
@@ -567,8 +584,8 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-full bg-white text-zinc-900 font-sans selection:bg-zinc-900 selection:text-white p-4 overflow-x-hidden">
-      <header className="flex items-center justify-center mb-6">
+    <div className="h-[620px] bg-white text-zinc-900 font-sans selection:bg-zinc-900 selection:text-white p-4 overflow-hidden flex flex-col box-border" style={{ height: '620px', overflow: 'hidden', maxHeight: '620px' }}>
+      <header className="flex items-center justify-center mb-6 shrink-0 h-12">
         <div className="flex gap-1.5 bg-zinc-100 p-1.5 rounded-[20px] border border-zinc-200/50 shadow-inner">
           <button
             onClick={() => setActiveTab('transform')}
@@ -605,7 +622,7 @@ export default function App() {
         </div>
       </header>
 
-      <main>
+      <main className="flex-1 overflow-hidden pr-1 min-h-0 pb-4">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -613,6 +630,7 @@ export default function App() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -5 }}
             transition={DESIGN.animation.spring}
+            className="min-h-full"
           >
             {activeTab === 'transform' ? (
               <Transformer initialInput={payload} showToast={showToast} />

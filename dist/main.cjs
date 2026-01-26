@@ -1,9 +1,12 @@
 const path = require('path');
 const { ipcMain, Notification, exec } = require('electron');
+const fs = require('fs');
 
 module.exports = () => {
   let floatingWindow = null;
+  let petWindow = null;
   let registeredShortcuts = [];
+  let watcher = null;
 
   return {
     onReady(ctx) {
@@ -18,7 +21,117 @@ module.exports = () => {
             floatingWindow = null;
           }
         });
+        
+        // Pet Window IPCs
+        ipcMain.on('pet-ignore-mouse', (event, ignore) => {
+          if (petWindow && !petWindow.isDestroyed()) {
+            petWindow.setIgnoreMouseEvents(ignore, { forward: true });
+          }
+        });
+
+        ipcMain.on('pet-close', () => {
+          if (petWindow && !petWindow.isDestroyed()) {
+            petWindow.destroy();
+            petWindow = null;
+          }
+        });
+
+        ipcMain.on('pet-update-paths', (event, paths) => {
+          startWatcher(paths);
+        });
+
+        ipcMain.on('pet-show', () => {
+          createPetWindow();
+        });
+
+        ipcMain.on('pet-move-relative', (event, { dx, dy }) => {
+          if (petWindow && !petWindow.isDestroyed()) {
+            const pos = petWindow.getPosition();
+            petWindow.setPosition(Math.round(pos[0] + dx), Math.round(pos[1] + dy));
+          }
+        });
       }
+
+      const createPetWindow = () => {
+        if (petWindow && !petWindow.isDestroyed()) return;
+
+        const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+        const [w, h] = [200, 200];
+        
+        petWindow = new BrowserWindow({
+          width: w,
+          height: h,
+          x: width - w - 20,
+          y: height - h - 20,
+          frame: false,
+          transparent: true,
+          alwaysOnTop: true,
+          resizable: false,
+          skipTaskbar: true,
+          hasShadow: false,
+          webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+            devTools: false
+          }
+        });
+
+        const petPath = path.join(__dirname, 'pet.html');
+        petWindow.loadURL(`file://${petPath}`);
+        
+        // Default ignore mouse events for transparency
+        petWindow.setIgnoreMouseEvents(true, { forward: true });
+
+        petWindow.on('closed', () => {
+          petWindow = null;
+        });
+
+        console.log('PetWindow created successfully');
+      };
+
+      const startWatcher = (paths) => {
+        if (watcher) {
+          watcher.close();
+        }
+        
+        console.log('Starting pet watcher for paths:', paths);
+        
+        paths.forEach(p => {
+          try {
+            const resolvedPath = p.replace(/^~/, process.env.HOME || process.env.USERPROFILE);
+            if (!fs.existsSync(resolvedPath)) {
+              console.log(`Watcher: Path does not exist: ${resolvedPath}`);
+              return;
+            }
+
+            fs.watch(resolvedPath, (eventType, filename) => {
+              console.log(`File changed: ${resolvedPath}`);
+              if (petWindow && !petWindow.isDestroyed()) {
+                petWindow.webContents.send('pet-status-change', { status: 'WORKING', path: resolvedPath });
+                
+                // Reset to IDLE after some time (simulating work finish if no further changes)
+                // In a real scenario, we might want to watch the content or wait for a specific pattern
+                setTimeout(() => {
+                  if (petWindow && !petWindow.isDestroyed()) {
+                    petWindow.webContents.send('pet-status-change', { status: 'IDLE' });
+                  }
+                }, 3000);
+              }
+            });
+          } catch (e) {
+            console.error(`Failed to watch path: ${p}`, e);
+          }
+        });
+      };
+
+      // Initial Pet Window creation
+      createPetWindow();
+      
+      // Default watch paths
+      const defaultPaths = [
+        path.join(process.env.HOME || process.env.USERPROFILE, '.claude', 'sessions.jsonl')
+      ];
+      startWatcher(defaultPaths);
 
       const createFloatingWindow = (text) => {
         if (floatingWindow && !floatingWindow.isDestroyed()) floatingWindow.destroy();

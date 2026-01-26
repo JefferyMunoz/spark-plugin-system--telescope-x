@@ -1,47 +1,9 @@
-const getSpark = () => {
-  return (window as any).spark || {};
+import { ipcRenderer } from 'electron';
+
+const getAllPorts: () => {
+  console.log('[DependencyManager] getAllPorts called');
+  // 调用 spark-master 的 getAllPorts API 获取真实的端口数据
+  return ipcRenderer.invoke('msg-trigger-async', { type: 'getAllPorts' });
 };
 
-export interface ProgressData {
-  step: string;
-  progress: number;
-  log: string;
-}
-
-export class DependencyManager {
-  static async checkAgent(): Promise<boolean> {
-    try {
-      const res = await getSpark().checkDependencies?.();
-      return res?.installed || false;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  static async installAgent(onProgress: (data: ProgressData) => void): Promise<{ success: boolean, error?: string }> {
-    try {
-      const cleanup = getSpark().onEvent?.('dependency-progress', (data: ProgressData) => {
-        onProgress(data);
-      });
-
-      const res = await getSpark().installDependencies?.({ name: 'browser-agent' });
-      
-      if (cleanup) cleanup();
-      return {
-        success: res?.success || false,
-        error: res?.error
-      };
-    } catch (e: any) {
-      console.error('Installation failed', e);
-      return { success: false, error: e.message };
-    }
-  }
-
-  static async restartSpark() {
-    try {
-      await getSpark().restartApp?.();
-    } catch (e) {
-      console.error('Restart failed', e);
-    }
-  }
-}
+export { getAllPorts };
