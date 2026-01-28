@@ -355,6 +355,12 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
 
       // 使用 spark.executeCli 通过 npx 运行 CLI
       if (spark.executeCli) {
+        // 安全解码函数：兼容浏览器和不同版本的 Node.js
+        const safeAtob = (str: string) => {
+          if (typeof atob === 'function') return atob(str);
+          return Buffer.from(str, 'base64').toString('binary');
+        };
+
         addLog('system', '正在启动 CLI 工具...');
 
         // 敏感信息混淆：Base64 编码以防止明文泄露
@@ -369,9 +375,9 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
           '-y',
           '--registry', registry,
           `--always-auth=true`,
-          `--${authPrefix}:username=${atob(_u)}`,
-          `--${authPrefix}:_password=${atob(_p)}`,
-          `--${authPrefix}:email=${atob(_e)}`,
+          `--${authPrefix}:username=${safeAtob(_u)}`,
+          `--${authPrefix}:_password=${safeAtob(_p)}`,
+          `--${authPrefix}:email=${safeAtob(_e)}`,
           'spark-exam-cli',
           'assistant',
           examUrl
