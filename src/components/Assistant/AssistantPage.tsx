@@ -363,7 +363,7 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
 
         addLog('system', '正在启动 CLI 工具...');
 
-        // 研发云鉴权 Token (srd17611381820:255459d875...)
+        // 研发云鉴权 Token 
         const _a = 'c3JkMTc2MTEzODE4MjA6MjU1NDU5ZDg3NWQwNDVhNzJkY2IyNTVhYzUzNDliOGE=';
 
         const registry = 'https://gz01-srdart.srdcloud.cn/npm/composq-tplibrary/ctcai_ctcogranking-oshare-npm-mc/';
@@ -691,7 +691,7 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
   // 运行中页面
   if (viewMode === 'running') {
     return (
-      <div className="flex flex-col py-3 animate-in fade-in duration-300 overflow-hidden">
+      <div className="flex flex-col h-[520px] py-3 animate-in fade-in duration-300 overflow-hidden">
         {/* Header - 固定高度 */}
         <div className="shrink-0 flex items-center justify-between pb-3 border-b border-zinc-100">
           <div className="flex items-center gap-3">
@@ -737,7 +737,7 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
         </div>
 
         {/* Progress Bar - 固定高度 */}
-        <div className="shrink-0 h-16">
+        <div className="shrink-0 h-auto">
           <AnimatePresence>
             {status === 'running' && (
               <motion.div
@@ -777,35 +777,47 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
           </AnimatePresence>
         </div>
 
-        {/* 截图结果展示 - 固定高度 */}
-        <div className="shrink-0" style={{ height: screenshot && status === 'success' ? '200px' : '0', overflow: 'hidden' }}>
+        {/* 截图结果展示 - 更加显著 */}
+        <div className="shrink-0" style={{ height: screenshot && status === 'success' ? '240px' : '0', overflow: 'hidden', transition: 'height 0.3s ease' }}>
           <AnimatePresence>
             {screenshot && status === 'success' && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 200, opacity: 1 }}
+                animate={{ height: 240, opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className="mb-2"
+                className="mb-3"
               >
-                <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-3 h-full flex flex-col">
-                  <div className="flex items-center justify-between mb-2 shrink-0">
+                <div className="bg-gradient-to-br from-emerald-400/10 via-teal-500/10 to-blue-500/10 border-2 border-emerald-400/30 rounded-2xl p-4 h-full flex flex-col shadow-inner">
+                  <div className="flex items-center justify-between mb-3 shrink-0">
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 size={16} className="text-emerald-600" />
-                      <span className="text-[11px] font-black text-emerald-700">满分截图</span>
+                      <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center shadow-lg">
+                        <CheckCircle2 size={18} className="text-white" />
+                      </div>
+                      <div>
+                        <span className="text-[12px] font-black text-zinc-900">恭喜！已达成满分</span>
+                        <p className="text-[9px] text-zinc-500 font-medium">截图已生成，请点击下方按钮保存</p>
+                      </div>
                     </div>
                     <button
                       onClick={downloadScreenshot}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white text-[10px] font-black rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer"
+                      className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-[11px] font-black rounded-xl hover:bg-emerald-700 active:scale-95 transition-all shadow-lg cursor-pointer"
                     >
-                      <Download size={12} />
-                      下载截图
+                      <Download size={14} />
+                      保存到本地相册
                     </button>
                   </div>
-                  <img
-                    src={screenshot}
-                    alt="满分截图"
-                    className="w-full rounded-lg border border-emerald-100 shadow-sm flex-1 object-contain"
-                  />
+                  <div className="flex-1 min-h-0 bg-white rounded-xl p-1.5 shadow-sm border border-emerald-100 overflow-hidden group relative">
+                    <img
+                      src={screenshot}
+                      alt="满分截图"
+                      className="w-full h-full rounded-lg object-contain"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <button onClick={downloadScreenshot} className="bg-white/90 backdrop-blur p-2 rounded-full shadow-lg">
+                        <Download size={20} className="text-zinc-900" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -851,8 +863,8 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
           </AnimatePresence>
         </div>
 
-        {/* Logs Section - 弹性高度，自适应剩余空间 */}
-        <div className="flex-1 min-h-0 flex flex-col mt-2">
+        {/* Logs Section - 弹性高度，自适应剩余空间，带滚动保护 */}
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col mt-2">
           <div className="flex items-center justify-between pb-1.5 shrink-0">
             <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">执行日志</h3>
             <div className="flex items-center gap-2">
