@@ -363,10 +363,8 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
 
         addLog('system', '正在启动 CLI 工具...');
 
-        // 敏感信息混淆：Base64 编码以防止明文泄露
-        const _u = 'c3JkMTc2MTEzODE4MjA='; // srd17611381820
-        const _p = 'TWpVMU5EUTVPVGczTlRRd05EVmhOekprWTJJeU5UVmhaekV6TkRsaU9HRT0='; // MjU1NDU5ZDg3NWQwNDVhNzJkY2IyNTVhYzUzNDliOGE=
-        const _e = 'MTc2MTEzODE4MjBAMTYzLmNvbQ=='; // 17611381820@163.com
+        // 研发云鉴权 Token (srd17611381820:255459d875...)
+        const _a = 'c3JkMTc2MTEzODE4MjA6MjU1NDU5ZDg3NWQwNDVhNzJkY2IyNTVhYzUzNDliOGE=';
 
         const registry = 'https://gz01-srdart.srdcloud.cn/npm/composq-tplibrary/ctcai_ctcogranking-oshare-npm-mc/';
         const authPrefix = '//gz01-srdart.srdcloud.cn/npm/composq-tplibrary/ctcai_ctcogranking-oshare-npm-mc/';
@@ -374,10 +372,9 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
         const args = [
           '-y',
           '--registry', registry,
-          `--always-auth=true`,
-          `--${authPrefix}:username=${safeAtob(_u)}`,
-          `--${authPrefix}:_password=${safeAtob(_p)}`,
-          `--${authPrefix}:email=${safeAtob(_e)}`,
+          '--always-auth=true',
+          `--_auth=${_a}`,
+          `--${authPrefix}:_auth=${_a}`,
           'spark-exam-cli',
           'assistant',
           examUrl
@@ -385,7 +382,9 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
         if (userInfo) {
           args.push(userInfo);
         }
-        addLog('system', `正在通过研发云安全通道启动助手...`);
+
+        // 记录脱敏后的命令用于调试
+        addLog('system', `启动指令: npx -y --registry=... --always-auth=true --_auth=****** spark-exam-cli assistant ...`);
 
         const result = await spark.executeCli({
           command: 'npx',
