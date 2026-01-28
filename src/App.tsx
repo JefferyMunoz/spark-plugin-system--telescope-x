@@ -1,149 +1,746 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Zap, Terminal, Keyboard, Sparkles, Settings, ChevronLeft, ChevronRight,
-  Globe, Lock, ShieldCheck,
-  Copy as CopyIcon, Trash2, ArrowRight, Hash, Activity, PowerOff
+    Zap, Skull, RefreshCw, ArrowRightLeft,
+    Globe, Lock, ShieldCheck,
+    Copy, Trash2, ArrowRight, CornerDownRight, Hash, Activity, Terminal, PowerOff,
+    Command as CommandIcon, Keyboard, Sparkles
 } from 'lucide-react';
 import AssistantPage from './components/Assistant/AssistantPage';
-import SettingsPage from './components/Settings/SettingsPage';
-import Sidebar from './components/Sidebar/Sidebar';
-import { cn } from 'clsx';
-
-const { ipcRenderer } = (window as any).require('electron');
+import dayjs from 'dayjs';
+import CryptoJS from 'crypto-js';
 
 const DESIGN = {
-  animation: {
-    spring: { type: "spring", stiffness: 400, damping: 28 } as const
-  }
+    animation: {
+        spring: { type: "spring", stiffness: 400, damping: 28 } as const
+    }
 } as const;
 
 const getSpark = () => {
-  const target = (window as any).spark || {};
-  return new Proxy(target, {
-    get(t, prop) {
-      if (typeof t[prop] === 'function') return t[prop].bind(t);
-      if (prop in t) return t[prop];
-      const fallback: Record<string, any> = {
-        copyText: (text: string) => navigator.clipboard.writeText(text),
-        readText: () => navigator.clipboard.readText(),
-        getAllPorts: async () => [],
-        killProcess: async (pid: string) => true,
-        onPluginEnter: (cb: any) => { },
-        setExpendHeight: (h: number) => { },
-        installDependencies: async (data: any) => ({ success: false, error: 'Environment not ready' }),
-        ping: () => 'pong-fallback'
-      };
-      if (prop in fallback) return fallback[prop as string];
-      return (...args: any[]) => {
-        console.warn(`[闪搭X] 尝试调用缺失的接口: ${String(prop)}`, args);
-      };
-    }
-  }) as any;
+    const target = (window as any).spark || {};
+    return new Proxy(target, {
+        get(t, prop) {
+            if (typeof t[prop] === 'function') return t[prop].bind(t);
+            if (prop in t) return t[prop];
+
+            const fallback: Record<string, any> = {
+                copyText: (text: string) => navigator.clipboard.writeText(text),
+                readText: () => navigator.clipboard.readText(),
+                getAllPorts: async () => [],
+                killProcess: async (pid: string) => true,
+                onPluginEnter: (cb: any) => { },
+                setExpendHeight: (h: number) => { },
+                installDependencies: async (data: any) => ({ success: false, error: 'Environment not ready' }),
+                ping: () => 'pong-fallback'
+            };
+
+            if (prop in fallback) return fallback[prop as string];
+            return (...args: any[]) => {
+                console.warn(`[闪搭X] 尝试调用缺失的接口: ${String(prop)}`, args);
+            };
+        }
+    }) as any;
 };
 
+const Tooltip = ({ children, content, position = 'top', align = 'center' }: any) => {
+    const [show, setShow] = useState(false);
+    return (
+        <div className="relative inline-block" onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+            {children}
+            <AnimatePresence>
+                {show && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9, y: position === 'top' ? 8 : -8 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: position === 'top' ? 8 : -8 }}
+                        className={`absolute ${position === 'top' ? 'bottom-full mb-3' : 'top-full mt-3'} ${align === 'center' ? 'left-1/2 -translate-x-1/2' : align === 'end' ? 'right-0' : 'left-0'} px-3 py-1.5 bg-zinc-900/95 backdrop-blur-sm text-white text-[10px] font-bold rounded-lg whitespace-nowrap z-[9999] shadow-2xl pointer-events-none border border-white/10`}
+                    >
+                        {content}
+                        <div className={`absolute ${position === 'top' ? 'top-full border-t-zinc-900/95' : 'bottom-full border-b-zinc-900/95'} ${align === 'center' ? 'left-1/2 -translate-x-1/2' : align === 'end' ? 'right-4' : 'left-4'} border-[5px] border-transparent`}></div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
+const ActionButton = ({ onClick, children, variant = 'default', icon: Icon, className = "", title = "", loading = false }: any) => (
+    <button
+        onClick={loading ? undefined : onClick}
+        title={title}
+        disabled={loading}
+        className={`group flex items-center justify-center gap-2 px-4 py-2 text-[11px] font-black rounded-lg transition-all active:scale-95 cursor-pointer border select-none min-w-[110px]
+      ${variant === 'primary' ? 'bg-zinc-900 text-white border-zinc-900 hover:bg-zinc-800 shadow-md' :
+                variant === 'danger' ? 'bg-red-50 text-red-600 border-red-100 hover:bg-red-600 hover:text-white hover:shadow-md' :
+                    'bg-white text-zinc-700 border-zinc-200 hover:border-zinc-900 hover:text-zinc-900 shadow-sm'} 
+      ${loading ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+    >
+        {Icon && (
+            <Icon
+                size={14}
+                strokeWidth={2.5}
+                className={`${loading ? 'animate-spin' : 'group-hover:scale-110 transition-transform'}`}
+            />
+        )}
+        <span className="tracking-wide">{children}</span>
+    </button>
+);
+
 const PROCESS_MAP: Record<string, string> = {
-  'node': 'Node.js 服务',
-  'java': 'Java 程序',
-  'python': 'Python 脚本',
-  'electron': 'Electron 应用',
-  'postgres': 'PostgreSQL',
-  'mysql': 'MySQL 数据库',
-  'redis-server': 'Redis 服务',
-  'nginx': 'Nginx 服务',
-  'docker': 'Docker 容器',
-  'chrome': 'Chrome 浏览器',
-  'code': 'VS Code',
-  'go': 'Go 程序',
-  'php': 'PHP 进程',
-  'rapportd': '系统通信服务',
-  'controlcenter': '系统控制中心',
-  'windowserver': '系统窗口管理器',
-  'discoveryd': '网络发现服务'
+    'node': 'Node.js 服务',
+    'java': 'Java 程序',
+    'python': 'Python 脚本',
+    'electron': 'Electron 应用',
+    'postgres': 'PostgreSQL',
+    'mysql': 'MySQL 数据库',
+    'redis-server': 'Redis 服务',
+    'nginx': 'Nginx 服务',
+    'docker': 'Docker 容器',
+    'chrome': 'Chrome 浏览器',
+    'code': 'VS Code',
+    'go': 'Go 程序',
+    'php': 'PHP 进程',
+    'rapportd': '系统通信服务',
+    'controlcenter': '系统控制中心',
+    'windowserver': '系统窗口管理器',
+    'discoveryd': '网络发现服务'
 };
 
 const getDisplayName = (name: string) => {
-  const lowName = (name || '').toLowerCase();
-  for (const key in PROCESS_MAP) {
-    if (lowName.includes(key)) return PROCESS_MAP[key];
-  }
-  return name || '未知应用';
+    const lowName = (name || '').toLowerCase();
+    for (const key in PROCESS_MAP) {
+        if (lowName.includes(key)) return PROCESS_MAP[key];
+    }
+    return name || '未知应用';
 };
 
-interface PageContentProps {
-  activeTab: string;
-  showToast: (msg: string) => void;
-}
+const PortKiller = ({ showToast }: any) => {
+    const [ports, setPorts] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [filter, setFilter] = useState('');
 
-// Page Content Selector
-const PageContent: React.FC<PageContentProps> = ({ activeTab, showToast }) => {
-  if (activeTab === 'assistant') {
-    return <AssistantPage activeTab={activeTab} showToast={showToast} />;
-  }
-  if (activeTab === 'settings') {
-    return <SettingsPage activeTab={activeTab} showToast={showToast} />;
-  }
-  return null;
+    const refresh = async () => {
+        setLoading(true);
+        console.log('[闪搭X] 正在刷新端口数据...');
+        console.log('[闪搭X] window.spark 对象:', (window as any).spark);
+        console.log('[闪搭X] getAllPorts 类型:', typeof (window as any).spark?.getAllPorts);
+
+        const minWait = new Promise(resolve => setTimeout(resolve, 600));
+        try {
+            const res = await getSpark().getAllPorts();
+            console.log('[闪搭X] 收到端口数据:', res);
+            setPorts(res || []);
+        } catch (err) {
+            console.error('[闪搭X] 刷新端口失败:', err);
+            setPorts([]);
+        } finally {
+            await minWait;
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        refresh();
+    }, []);
+
+    const kill = async (pid: string, port: string) => {
+        const success = await getSpark().killProcess(pid);
+        if (success) { showToast(`已强杀端口 ${port}`); refresh(); }
+        else showToast("终止操作失败");
+    };
+
+    const filtered = ports.filter(p => (p.port || '').includes(filter) || (p.name || '').toLowerCase().includes(filter.toLowerCase()));
+
+    return (
+        <div className="flex flex-col h-full gap-3 overflow-hidden">
+            <div className="flex items-center justify-end pb-2 border-b border-zinc-100 shrink-0 gap-2">
+                <input
+                    autoFocus
+                    className="text-[11px] bg-zinc-100/50 border border-zinc-200 rounded-lg px-3 py-2 w-48 focus:bg-white focus:border-zinc-300 outline-none transition-all font-bold"
+                    placeholder="搜索进程或端口..."
+                    value={filter}
+                    onChange={e => setFilter(e.target.value)}
+                />
+                <ActionButton
+                    onClick={refresh}
+                    icon={RefreshCw}
+                    loading={loading}
+                >
+                    刷新
+                </ActionButton>
+            </div>
+
+            <div className="flex-1 bg-zinc-50 border border-zinc-200 rounded-[24px] p-3 overflow-y-auto custom-scrollbar" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+                <div className="grid grid-cols-3 gap-2">
+                    {filtered.map(p => {
+                        const displayName = getDisplayName(p.name);
+                        return (
+                            <div key={`${p.port}-${p.pid}`} className="group relative flex flex-col items-center justify-center py-3 px-2 bg-white border border-zinc-100 rounded-xl transition-all hover:border-red-200 hover:shadow-sm h-20">
+                                <div className="text-[12px] font-mono font-black text-zinc-900 tracking-tighter">:{p.port}</div>
+                                <div className="text-[9px] font-black text-zinc-500 truncate w-full text-center px-1" title={p.name}>{displayName}</div>
+                                <div className="text-[8px] text-zinc-300 font-bold uppercase tracking-widest leading-none mt-1">PID: {p.pid}</div>
+
+                                <div className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={() => kill(p.pid, p.port)}
+                                        className="p-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all active:scale-90 cursor-pointer shadow-lg flex items-center gap-1.5"
+                                        title={`终止 ${p.name}`}
+                                    >
+                                        <PowerOff size={14} strokeWidth={3} />
+                                        <span className="text-[10px] font-black uppercase">终止进程</span>
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+                {filtered.length === 0 && (
+                    <div className="h-full min-h-[200px] flex flex-col items-center justify-center text-zinc-300 gap-2 py-10">
+                        <Activity size={32} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">无活跃连接数据</span>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const Transformer = ({ initialInput, showToast }: any) => {
+    const [source, setSource] = useState(initialInput || '');
+    const [result, setResult] = useState('');
+    const [mode, setMode] = useState('json');
+
+    const actions = {
+        jsonBeauty: (v: string) => JSON.stringify(JSON.parse(v), null, 2),
+        jsonMini: (v: string) => JSON.stringify(JSON.parse(v)),
+        b64Enc: (v: string) => btoa(unescape(encodeURIComponent(v))),
+        b64Dec: (v: string) => decodeURIComponent(escape(atob(v.replace(/\s/g, '')))),
+        urlEnc: (v: string) => encodeURIComponent(v),
+        urlDec: (v: string) => decodeURIComponent(v),
+        md5: (v: string) => CryptoJS.MD5(v).toString(),
+        timestamp: (v: string) => {
+            const val = v.trim();
+            if (!val) return dayjs().format('YYYY-MM-DD HH:mm:ss');
+            if (/^\d+$/.test(val)) {
+                const t = val.length === 10 ? parseInt(val) * 1000 : parseInt(val);
+                return dayjs(t).format('YYYY-MM-DD HH:mm:ss');
+            }
+            return dayjs(val).valueOf().toString();
+        },
+        jwt: (v: string) => {
+            const parts = v.split('.');
+            if (parts.length !== 3) throw new Error();
+            return JSON.stringify({
+                header: JSON.parse(atob(parts[0])),
+                payload: JSON.parse(atob(parts[1]))
+            }, null, 2);
+        },
+        unicodeEnc: (v: string) => v.replace(/[^\u0000-\u007f]/g, c => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`),
+        unicodeDec: (v: string) => JSON.parse(`"${v.replace(/"/g, '\\"')}"`),
+    };
+
+    const changeMode = (m: string) => {
+        setMode(m);
+        setSource('');
+        setResult('');
+        if (m === 'time') {
+            setResult(actions.timestamp(''));
+        }
+    };
+
+    useEffect(() => {
+        if (initialInput) setSource(initialInput);
+    }, [initialInput]);
+
+    const transform = (fn: (v: string) => string, successMsg: string) => {
+        try {
+            const res = fn(source);
+            setResult(res);
+            getSpark().copyText(res);
+            showToast(successMsg);
+        } catch (e) { showToast("转换异常：格式错误"); }
+    };
+
+    return (
+        <div className="flex flex-col h-full overflow-hidden">
+            <div className="flex items-center justify-between py-3 border-b border-zinc-100 shrink-0">
+                <div className="flex items-center gap-2">
+                    <Zap size={16} className="text-zinc-900 fill-zinc-900" />
+                    <h2 className="text-[12px] font-black text-zinc-900 tracking-tight">内容转换</h2>
+                </div>
+                <div className="flex gap-1 bg-zinc-100 p-0.5 rounded-lg border border-transparent/50">
+                    {[
+                        { id: 'json', label: 'JSON' },
+                        { id: 'base64', label: 'Base64' },
+                        { id: 'url', label: 'URL' },
+                        { id: 'time', label: '时间戳' },
+                        { id: 'jwt', label: 'JWT' },
+                        { id: 'unicode', label: 'Unicode' },
+                        { id: 'md5', label: 'MD5' },
+                    ].map(item => (
+                        <button
+                            key={item.id}
+                            onClick={() => changeMode(item.id)}
+                            className={`px-3 py-1 text-[10px] font-black rounded-md transition-all cursor-pointer ${mode === item.id ? 'bg-white text-zinc-900 shadow-sm border border-transparent/50' : 'text-zinc-400 hover:text-zinc-700'}`}
+                        >
+                            {item.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="grid grid-cols-[1fr_auto_1fr] gap-3 mt-4" style={{ height: '340px' }}>
+                <div className="flex flex-col gap-1.5 h-full">
+                    <div className="flex items-center justify-between px-1 shrink-0">
+                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">输入源</span>
+                        <Trash2 size={12} className="text-zinc-300 cursor-pointer hover:text-red-500 transition-colors" onClick={() => { setSource(''); setResult(''); }} />
+                    </div>
+                    <textarea
+                        className="flex-1 p-3 text-[11px] font-mono bg-zinc-50 border border-zinc-200 rounded-lg outline-none focus:bg-white focus:border-zinc-300 transition-all custom-scrollbar resize-none font-bold text-zinc-800 w-full"
+                        value={source}
+                        onChange={e => setSource(e.target.value)}
+                        placeholder="粘贴或输入数据..."
+                        style={{ height: 'calc(100% - 20px)' }}
+                    />
+                </div>
+
+                <div className="flex items-center justify-center pointer-events-none shrink-0">
+                    <div className="w-8 h-8 bg-white border border-zinc-200 rounded-full flex items-center justify-center shadow-sm text-zinc-900">
+                        <ArrowRight size={16} strokeWidth={2.5} />
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5 h-full">
+                    <div className="flex items-center justify-between px-1 shrink-0">
+                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">输出结果</span>
+                        <Copy size={14} className="text-zinc-400 cursor-pointer hover:text-zinc-900 transition-colors" onClick={() => { getSpark().copyText(result); showToast("已复制"); }} />
+                    </div>
+                    <div className="flex-1 p-3 text-[11px] font-mono bg-zinc-50 border border-zinc-200 rounded-lg custom-scrollbar overflow-y-auto whitespace-pre-wrap break-all font-bold text-zinc-800 border-dashed w-full" style={{ height: 'calc(100% - 20px)' }}>
+                        {result || <span className="text-zinc-300 italic font-medium text-[10px]">等待转换...</span>}
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 pt-4 pb-6 px-4 border-t border-zinc-100 shrink-0">
+                {mode === 'json' && (
+                    <>
+                        <ActionButton onClick={() => transform(actions.jsonBeauty, "美化完成")} icon={RefreshCw} variant="primary">美化</ActionButton>
+                        <ActionButton onClick={() => transform(actions.jsonMini, "压缩完成")} icon={ArrowRightLeft}>压缩</ActionButton>
+                    </>
+                )}
+                {mode === 'base64' && (
+                    <>
+                        <ActionButton onClick={() => transform(actions.b64Dec, "解码完成")} icon={Lock} variant="primary">解码</ActionButton>
+                        <ActionButton onClick={() => transform(actions.b64Enc, "编码完成")} icon={Lock}>编码</ActionButton>
+                    </>
+                )}
+                {mode === 'url' && (
+                    <>
+                        <ActionButton onClick={() => transform(actions.urlDec, "解码完成")} icon={Globe} variant="primary">解码</ActionButton>
+                        <ActionButton onClick={() => transform(actions.urlEnc, "编码完成")} icon={Globe}>编码</ActionButton>
+                    </>
+                )}
+                {mode === 'time' && (
+                    <ActionButton onClick={() => transform(actions.timestamp, "转换完成")} icon={RefreshCw} variant="primary">转换</ActionButton>
+                )}
+                {mode === 'jwt' && (
+                    <ActionButton onClick={() => transform(actions.jwt, "解析完成")} icon={ShieldCheck} variant="primary">解析</ActionButton>
+                )}
+                {mode === 'unicode' && (
+                    <>
+                        <ActionButton onClick={() => transform(actions.unicodeDec, "解码完成")} icon={RefreshCw} variant="primary">解码</ActionButton>
+                        <ActionButton onClick={() => transform(actions.unicodeEnc, "编码完成")} icon={RefreshCw}>编码</ActionButton>
+                    </>
+                )}
+                {mode === 'md5' && (
+                    <ActionButton onClick={() => transform(actions.md5, "生成完成")} icon={Hash} variant="primary">生成</ActionButton>
+                )}
+                {(mode === 'base64' || mode === 'url' || mode === 'json' || mode === 'unicode') && (
+                    <ActionButton
+                        onClick={() => {
+                            const temp = source;
+                            setSource(result);
+                            setResult(temp);
+                            showToast("已调转内容");
+                        }}
+                        icon={ArrowRightLeft}
+                    >
+                        调转
+                    </ActionButton>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const PasswordGenerator = ({ showToast }: any) => {
+    const [password, setPassword] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [history, setHistory] = useState<string[]>([]);
+
+    const generatePassword = () => {
+        setIsGenerating(true);
+        const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=";
+        let res = "";
+        res += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)];
+        res += "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)];
+        res += "0123456789"[Math.floor(Math.random() * 10)];
+        res += "!@#$%^&*()_+"[Math.floor(Math.random() * 12)];
+
+        for (let i = 0; i < 12; i++) {
+            res += charset.charAt(Math.floor(Math.random() * charset.length));
+        }
+        const pwd = res.split('').sort(() => 0.5 - Math.random()).join('');
+
+        setTimeout(() => {
+            setPassword(pwd);
+            setHistory(h => [pwd, ...h].slice(0, 3));
+            getSpark().copyText(pwd);
+            showToast("已生成并复制");
+            setIsGenerating(false);
+        }, 200);
+    };
+
+    useEffect(() => {
+        generatePassword();
+    }, []);
+
+    return (
+        <div className="flex flex-col items-center justify-center h-[480px] gap-10 animate-in fade-in duration-500">
+            <div className="flex flex-col items-center gap-8">
+                {/* 状态指示器 */}
+                <div className="flex items-center gap-2 px-4 py-1.5 bg-zinc-50 border border-zinc-100 rounded-full">
+                    <motion.div
+                        className="w-1.5 h-1.5 rounded-full bg-emerald-500"
+                        animate={{ opacity: [1, 0.4, 1] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                    />
+                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em]">安全密码生成器</span>
+                </div>
+
+                {/* 密码显示 - 参考键盘监听的3D风格 */}
+                <div className="h-28 flex items-center justify-center">
+                    <motion.div
+                        key={password}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <div className="px-10 py-6 bg-white border-b-[6px] border border-zinc-200 rounded-2xl shadow-2xl">
+                            <span className="text-4xl font-mono font-black text-zinc-900 tracking-wider selection:bg-zinc-900 selection:text-white">
+                                {password}
+                            </span>
+                        </div>
+                    </motion.div>
+                </div>
+
+                {/* 重新生成按钮 */}
+                <button
+                    onClick={generatePassword}
+                    disabled={isGenerating}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-zinc-900 text-white text-[11px] font-black rounded-lg border-b-4 border-b-zinc-950 shadow-lg hover:shadow-xl active:border-b-0 active:translate-y-1 transition-all cursor-pointer disabled:opacity-50"
+                >
+                    <motion.div
+                        animate={isGenerating ? { rotate: 360 } : { rotate: 0 }}
+                        transition={{ duration: 0.6, ease: "linear" }}
+                    >
+                        <RefreshCw size={14} />
+                    </motion.div>
+                    重新生成
+                </button>
+            </div>
+
+            {/* 历史记录 - 固定高度占位 */}
+            <div className="flex flex-col items-center gap-2 min-h-[60px]">
+                <span className="text-[8px] font-black text-zinc-300 uppercase tracking-widest">历史记录</span>
+                <div className="flex gap-2 min-h-[28px]">
+                    {history.slice(1).map((h, i) => (
+                        <div
+                            key={h}
+                            onClick={() => {
+                                setPassword(h);
+                                getSpark().copyText(h);
+                                showToast("已复制");
+                            }}
+                            className="px-3 py-1.5 bg-white border border-zinc-200 rounded-lg text-[10px] font-mono font-bold text-zinc-400 cursor-pointer hover:text-zinc-900 hover:border-zinc-300 transition-all"
+                        >
+                            {h}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const KeyListener = () => {
+    const [activeKeys, setActiveKeys] = useState<string[]>([]);
+    const [history, setHistory] = useState<string[][]>([]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            e.preventDefault();
+            const keys: string[] = [];
+            if (e.metaKey) keys.push('Cmd');
+            if (e.ctrlKey) keys.push('Ctrl');
+            if (e.altKey) keys.push('Alt');
+            if (e.shiftKey) keys.push('Shift');
+
+            const keyName = e.key === ' ' ? 'Space' : e.key.charAt(0).toUpperCase() + e.key.slice(1);
+            if (!['Meta', 'Control', 'Alt', 'Shift', 'Command'].includes(e.key)) {
+                keys.push(keyName);
+            }
+
+            setActiveKeys(keys);
+        };
+
+        const handleKeyUp = (e: KeyboardEvent) => {
+            setActiveKeys(prev => {
+                if (prev.length > 0) {
+                    setHistory(h => [prev, ...h].slice(0, 5));
+                }
+                return [];
+            });
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+        };
+    }, []);
+
+    return (
+        <div className="flex flex-col items-center justify-center h-[400px] gap-12 animate-in fade-in zoom-in-95 duration-700">
+            <div className="flex flex-col items-center gap-6">
+                <div className="h-24 flex items-center justify-center gap-3">
+                    <AnimatePresence mode="popLayout">
+                        {activeKeys.length > 0 ? (
+                            activeKeys.map((k, i) => (
+                                <motion.kbd
+                                    key={`${k}-${i}`}
+                                    initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.5, filter: 'blur(10px)' }}
+                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                    className="px-6 py-4 min-w-[80px] text-center bg-white border-b-[6px] border border-zinc-200 rounded-2xl text-2xl font-mono font-black text-zinc-900 shadow-2xl"
+                                >
+                                    {k}
+                                </motion.kbd>
+                            ))
+                        ) : (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 0.4, scale: [1, 1.05, 1] }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                                className="text-zinc-400 font-black tracking-[0.3em] uppercase text-sm italic"
+                            >
+                                等待键盘输入...
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-1.5 bg-zinc-50 border border-zinc-100 rounded-full">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,1)]"></div>
+                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.2em]">键盘监听模式</span>
+                </div>
+            </div>
+
+            <div className="flex flex-col items-center gap-3 w-full max-w-xs">
+                <span className="text-[8px] font-black text-zinc-300 uppercase tracking-widest mb-1">历史按键序列</span>
+                <div className="flex flex-col gap-2 w-full">
+                    {history.map((h, i) => (
+                        <motion.div
+                            key={i}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1 / (i + 1), x: 0 }}
+                            className="flex justify-center gap-1.5"
+                        >
+                            {h.map((k, ki) => (
+                                <span key={ki} className="px-2 py-0.5 bg-zinc-50 border border-zinc-100 rounded text-[10px] font-mono font-bold text-zinc-400">
+                                    {k}
+                                </span>
+                            ))}
+                        </motion.div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
 };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'transform' | 'ports' | 'keyboard' | 'assistant' | 'settings'>('assistant');
+    const [activeTab, setActiveTab] = useState<'transform' | 'password' | 'ports' | 'keyboard' | 'assistant'>('transform');
+    const [payload, setPayload] = useState<any>(null);
+    const [toast, setToast] = useState({ show: false, message: "" });
 
-  const [toast, setToast] = useState({ show: false, message: '' });
+    // 添加调试快捷键
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Ctrl+Shift+I - 打开插件 DevTools
+            if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+                e.preventDefault();
+                const spark = (window as any).spark || {};
+                if (typeof spark.openPluginDevTools === 'function') {
+                    spark.openPluginDevTools().then((res: any) => {
+                        console.log('[DevTools] Open result:', res);
+                        if (res?.success) {
+                            alert('✓ DevTools 已在新窗口打开！');
+                        } else {
+                            alert('✗ 打开 DevTools 失败: ' + (res?.error || '未知错误'));
+                        }
+                    });
+                } else {
+                    alert('openPluginDevTools 方法不可用，请更新 spark-master');
+                }
+                return;
+            }
+            // Ctrl+Shift+D - 显示调试信息
+            if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                e.preventDefault();
+                const spark = (window as any).spark || {};
+                const debugInfo = {
+                    sparkExists: !!spark,
+                    sparkKeys: Object.keys(spark),
+                    hasCallAgentBrowser: !!spark.callAgentBrowser,
+                    callAgentBrowserType: typeof spark.callAgentBrowser,
+                    hasCheckDependencies: !!spark.checkDependencies,
+                    checkDependenciesType: typeof spark.checkDependencies,
+                    hasDbGet: !!spark.dbGet,
+                    hasDbPut: !!spark.dbPut,
+                    hasGetAllPorts: !!spark.getAllPorts,
+                    hasOpenPluginDevTools: !!spark.openPluginDevTools
+                };
+                console.log('[DEBUG] Spark API Info:', debugInfo);
+                alert(JSON.stringify(debugInfo, null, 2));
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
-  const [expendHeight, setExpendHeight] = useState(650);
+    const showToast = (msg: string) => {
+        setToast({ show: true, message: msg });
+        setTimeout(() => setToast({ show: false, message: "" }), 2000);
+    };
 
-  useEffect(() => {
-    const s = getSpark();
-    console.log('[闪搭X] 核心自检...', {
-      ping: typeof s.ping,
-      install: typeof s.installDependencies,
-      ports: typeof s.getAllPorts,
-      keys: Object.keys(s)
-    });
-    getSpark().setExpendHeight(expendHeight);
-  }, [activeTab]);
+    useEffect(() => {
+        // 强制自检：撕开接口丢失的黑盒
+        const s = getSpark();
+        console.log('[闪搭X] 核心自检...', {
+            ping: typeof s.ping,
+            install: typeof s.installDependencies,
+            ports: typeof s.getAllPorts,
+            keys: Object.keys(s)
+        });
 
-  const showToast = (msg: string) => {
-    setToast({ show: true, message: msg });
-    setTimeout(() => setToast({ show: false, message: '' }), 2000);
-  };
+        getSpark().setExpendHeight(620);
+    }, [activeTab]);
 
-  return (
-    <div className="h-[650px] bg-white text-zinc-900 overflow-hidden flex">
-      <Sidebar activeTab={activeTab} onTabChange={(tab: any) => setActiveTab(tab)} />
+    useEffect(() => {
+        const handleEnter = (data: any) => {
+            const code = (data?.code || '').toLowerCase();
+            const content = data?.payload || '';
+            const params = new URLSearchParams(window.location.search);
+            const urlCode = params.get('code');
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-hidden">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="flex-1 min-h-0"
-          >
-            <PageContent activeTab={activeTab} showToast={showToast} />
-          </motion.div>
-        </AnimatePresence>
-      </main>
+            if (code === 'port-killer' || urlCode === 'port-killer' || (content.includes('kill') && !content.includes('{'))) {
+                setActiveTab('ports');
+            } else {
+                setActiveTab('transform');
+            }
+            setPayload(content);
+        };
 
-      {/* Toast Notification */}
-      <AnimatePresence>
-        {toast.show && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="fixed bottom-10 left-1/2 -translate-x-1/2 px-6 py-3 bg-zinc-900 text-white text-[11px] font-medium rounded-full shadow-2xl z-50 flex items-center gap-3 border-white/10"
-          >
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
-            <span className="text-sm font-medium">{toast.message}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
+        getSpark().onPluginEnter?.(handleEnter);
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('code') === 'port-killer') setActiveTab('ports');
+    }, []);
+
+    return (
+        <div className="h-[550px] bg-white text-zinc-900 font-sans selection:bg-zinc-900 selection:text-white px-4 py-2 overflow-hidden flex flex-col box-border" style={{ height: '550px', overflow: 'hidden', maxHeight: '550px' }}>
+            <header className="flex items-center justify-center shrink-0 py-2">
+                <div className="flex gap-1 bg-zinc-100 p-1.5 rounded-xl border border-transparent/50 shadow-inner">
+                    <button
+                        onClick={() => setActiveTab('transform')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[11px] font-black transition-all cursor-pointer
+              ${activeTab === 'transform' ? 'bg-white text-zinc-900 shadow-sm border border-transparent/50' : 'text-zinc-400 hover:text-zinc-600'}`}
+                    >
+                        <Zap size={13} className={activeTab === 'transform' ? 'text-zinc-900 fill-zinc-900' : ''} />
+                        内容转换
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('password')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[11px] font-black transition-all cursor-pointer
+              ${activeTab === 'password' ? 'bg-white text-zinc-900 shadow-sm border border-transparent/50' : 'text-zinc-400 hover:text-zinc-600'}`}
+                    >
+                        <Lock size={13} />
+                        密码生成
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('ports')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[11px] font-black transition-all cursor-pointer
+              ${activeTab === 'ports' ? 'bg-white text-zinc-900 shadow-sm border border-transparent/50' : 'text-zinc-400 hover:text-zinc-600'}`}
+                    >
+                        <Terminal size={13} />
+                        端口治理
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('keyboard')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[11px] font-black transition-all cursor-pointer
+              ${activeTab === 'keyboard' ? 'bg-white text-zinc-900 shadow-sm border border-transparent/50' : 'text-zinc-400 hover:text-zinc-600'}`}
+                    >
+                        <Keyboard size={13} />
+                        键盘监听
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('assistant')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[11px] font-black transition-all cursor-pointer
+              ${activeTab === 'assistant' ? 'bg-white text-zinc-900 shadow-sm border border-transparent/50' : 'text-zinc-400 hover:text-zinc-600'}`}
+                    >
+                        <Sparkles size={13} className={activeTab === 'assistant' ? 'text-zinc-900 fill-zinc-900' : ''} />
+                        辅助助手
+                    </button>
+                </div>
+            </header>
+
+            <main className="flex-1 overflow-hidden min-h-0">
+                <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                    className="min-h-full"
+                >
+                    {activeTab === 'transform' ? (
+                        <Transformer initialInput={payload} showToast={showToast} />
+                    ) : activeTab === 'password' ? (
+                        <PasswordGenerator showToast={showToast} />
+                    ) : activeTab === 'ports' ? (
+                        <PortKiller showToast={showToast} />
+                    ) : activeTab === 'keyboard' ? (
+                        <KeyListener />
+                    ) : (
+                        <AssistantPage showToast={showToast} />
+                    )}
+                </motion.div>
+            </main>
+
+            <AnimatePresence>
+                {toast.show && (
+                    <motion.div initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed bottom-10 left-1/2 -translate-x-1/2 px-6 py-3 bg-zinc-900 text-white text-[11px] font-black rounded-full shadow-2xl z-50 flex items-center gap-3 border border-white/10">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                        {toast.message}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e4e4e7; border-radius: 10px; }
+        textarea::placeholder { color: #e4e4e7; font-weight: 900; }
+      `}</style>
+        </div>
+    );
 }

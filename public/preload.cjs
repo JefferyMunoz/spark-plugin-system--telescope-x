@@ -20,6 +20,31 @@ const pluginAPI = {
     return ipcRenderer.invoke('msg-trigger-async', { type: 'getAllPorts' });
   },
 
+  // 调用浏览器代理（用于考试答题）
+  callAgentBrowser: (params) => {
+    return ipcRenderer.invoke('msg-trigger-async', { type: 'callAgentBrowser', data: params });
+  },
+
+  // 执行 agent-browser 命令（通用接口）
+  agentBrowserCmd: async (params) => {
+    try {
+      const result = await ipcRenderer.invoke('msg-trigger-async', { type: 'agentBrowserCmd', data: params });
+      return { success: true, data: result };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  // 数据库操作 - 保存知识库
+  dbPut: (params) => {
+    return ipcRenderer.invoke('msg-trigger-async', { type: 'dbPut', data: params });
+  },
+
+  // 数据库操作 - 查询知识库
+  dbGet: (params) => {
+    return ipcRenderer.invoke('msg-trigger-async', { type: 'dbGet', data: params });
+  },
+
   getProcessByPort: (port) => {
     return new Promise((resolve) => {
       const cmd = process.platform === 'win32'
@@ -48,6 +73,48 @@ const pluginAPI = {
   // 快捷钩子
   onPluginEnter: (callback) => {
     window.onPluginEnter = callback;
+  },
+
+  ping: () => {
+    return ipcRenderer.invoke('msg-trigger-async', { type: 'ping' });
+  },
+
+  setExpendHeight: (height) => {
+    return ipcRenderer.send('msg-trigger', { type: 'setExpendHeight', data: { height } });
+  },
+
+  installDependencies: (params) => {
+    return ipcRenderer.invoke('msg-trigger-async', { type: 'installDependencies', data: params });
+  },
+
+  checkDependencies: () => {
+    return ipcRenderer.invoke('msg-trigger-async', { type: 'checkDependencies' });
+  },
+
+  // CLI 执行接口 - 执行 shell 命令并实时返回输出
+  executeCli: async (params) => {
+    const { command, args = [], cwd, onOutput } = params;
+
+    // 设置输出监听器
+    let outputHandler = null;
+    if (onOutput) {
+      outputHandler = (_event, data) => {
+        onOutput(data);
+      };
+      ipcRenderer.on('ts-cli-output', outputHandler);
+    }
+
+    try {
+      const result = await ipcRenderer.invoke('ts-execute-cli', { command, args, cwd });
+      return result;
+    } catch (error) {
+      return { success: false, ...error };
+    } finally {
+      // 清理监听器
+      if (outputHandler) {
+        ipcRenderer.removeListener('ts-cli-output', outputHandler);
+      }
+    }
   }
 };
 

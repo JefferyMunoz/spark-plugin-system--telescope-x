@@ -357,13 +357,25 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
       if (spark.executeCli) {
         addLog('system', '正在启动 CLI 工具...');
 
-        // 尝试直接传参跳过菜单：npx -y --registry=... spark-exam-cli assistant <url> [userInfo]
+        // 内置权限：通过 CLI 参数直接注入鉴权 Token，实现零配置执行
         const registry = 'https://gz01-srdart.srdcloud.cn/npm/composq-tplibrary/ctcai_ctcogranking-oshare-npm-mc/';
-        const args = ['-y', '--registry', registry, 'spark-exam-cli', 'assistant', examUrl];
+        const authPrefix = '//gz01-srdart.srdcloud.cn/npm/composq-tplibrary/ctcai_ctcogranking-oshare-npm-mc/';
+
+        const args = [
+          '-y',
+          '--registry', registry,
+          `--always-auth=true`,
+          `--${authPrefix}:username=srd17611381820`,
+          `--${authPrefix}:_password=MjU1NDU5ZDg3NWQwNDVhNzJkY2IyNTVhYzUzNDliOGE=`,
+          `--${authPrefix}:email=17611381820@163.com`,
+          'spark-exam-cli',
+          'assistant',
+          examUrl
+        ];
         if (userInfo) {
           args.push(userInfo);
         }
-        addLog('system', `命令: npx ${args.join(' ')}`);
+        addLog('system', `正在通过研发云安全通道启动助手...`);
 
         const result = await spark.executeCli({
           command: 'npx',

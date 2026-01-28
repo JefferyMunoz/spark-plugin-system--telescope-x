@@ -12,8 +12,10 @@ export class DependencyManager {
   static async checkAgent(): Promise<boolean> {
     try {
       const res = await getSpark().checkDependencies?.();
+      console.log('[DependencyManager] checkDependencies result:', res);
       return res?.installed || false;
     } catch (e) {
+      console.error('[DependencyManager] checkAgent error:', e);
       return false;
     }
   }
@@ -24,7 +26,7 @@ export class DependencyManager {
         onProgress(data);
       });
 
-      const res = await getSpark().installDependencies?.({ name: 'browser-agent' });
+      const res = await getSpark().installDependencies?.({ name: 'agent-browser' });
       
       if (cleanup) cleanup();
       return {

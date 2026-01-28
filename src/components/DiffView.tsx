@@ -1,12 +1,12 @@
 import React, { Suspense, useMemo, useRef, useState, useCallback, useEffect } from 'react';
-import {
-  Check,
-  Copy,
-  ChevronDown,
-  ChevronRight,
-  Zap,
-  Maximize2,
-  Minimize2,
+import { 
+  Check, 
+  Copy, 
+  ChevronDown, 
+  ChevronRight, 
+  Zap, 
+  Maximize2, 
+  Minimize2, 
   Type,
   AlignLeft,
   Columns,
@@ -78,10 +78,11 @@ function ToolbarButton({ active, onClick, children, title }: { active?: boolean;
     <button
       title={title}
       onClick={onClick}
-      className={`px-2 h-6 rounded-sm transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${active
-          ? 'bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
+      className={`px-2 h-6 rounded-sm transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+        active 
+          ? 'bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 shadow-sm' 
           : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
-        }`}
+      }`}
     >
       {children}
     </button>
@@ -93,10 +94,11 @@ function ToolbarToggle({ children, label, checked, onChange, title }: { children
     <button
       title={title || label}
       onClick={() => onChange(!checked)}
-      className={`px-2 h-7 rounded-md transition-all cursor-pointer border flex items-center gap-1.5 ${checked
-          ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30'
+      className={`px-2 h-7 rounded-md transition-all cursor-pointer border flex items-center gap-1.5 ${
+        checked 
+          ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30' 
           : 'bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
-        }`}
+      }`}
     >
       {children}
       <span className="text-[10px] font-bold uppercase tracking-tight hidden md:inline">{label}</span>
@@ -104,18 +106,18 @@ function ToolbarToggle({ children, label, checked, onChange, title }: { children
   );
 }
 
-function AnnotationCard({
-  finding,
+function AnnotationCard({ 
+  finding, 
   index,
-  onCopy,
-  isIgnored,
+  onCopy, 
+  isIgnored, 
   onIgnore,
   theme = 'light'
-}: {
-  finding: Finding;
+}: { 
+  finding: Finding; 
   index: number;
-  onCopy: () => void;
-  isIgnored?: boolean;
+  onCopy: () => void; 
+  isIgnored?: boolean; 
   onIgnore?: (id: string) => void;
   theme?: 'light' | 'dark';
 }) {
@@ -138,7 +140,7 @@ function AnnotationCard({
   const isDark = theme === 'dark';
 
   return (
-    <div
+    <div 
       className="group my-3 relative animate-in fade-in slide-in-from-top-2 duration-300"
       style={{
         gridColumn: '1 / -1',
@@ -147,19 +149,21 @@ function AnnotationCard({
         zIndex: 20
       }}
     >
-      <div
-        className={`mx-auto max-w-[98%] rounded-sm border-l-2 overflow-hidden ${isDark
-            ? 'bg-zinc-900/50 border-l-emerald-500 border-y border-r border-zinc-800'
+      <div 
+        className={`mx-auto max-w-[98%] rounded-sm border-l-2 overflow-hidden ${
+          isDark 
+            ? 'bg-zinc-900/50 border-l-emerald-500 border-y border-r border-zinc-800' 
             : 'bg-white border-l-emerald-500 border-y border-r border-zinc-200'
-          }`}
+        }`}
       >
         <div className="px-3 py-2">
           <div className="flex items-start gap-2.5">
-            <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded flex items-center justify-center ${isDark ? 'text-emerald-400' : 'text-emerald-600'
-              }`}>
+            <div className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded flex items-center justify-center ${
+              isDark ? 'text-emerald-400' : 'text-emerald-600'
+            }`}>
               <Zap size={12} fill="currentColor" />
             </div>
-
+            
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <div className="flex items-center gap-2">
@@ -167,31 +171,35 @@ function AnnotationCard({
                     AI 洞察
                   </span>
                 </div>
-                <div className={`px-1.5 py-px rounded text-[9px] font-bold uppercase tracking-wider border ${finding.severity === 'critical' || finding.severity === 'high'
-                    ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                <div className={`px-1.5 py-px rounded text-[9px] font-bold uppercase tracking-wider border ${
+                  finding.severity === 'critical' || finding.severity === 'high' 
+                    ? 'bg-red-500/10 text-red-500 border-red-500/20' 
                     : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                  }`}>
+                }`}>
                   {finding.severity}
                 </div>
               </div>
-
+              
               <div className={`text-[11px] leading-relaxed ${isDark ? 'text-zinc-300' : 'text-zinc-600'}`}>
                 {finding.message}
               </div>
 
               {finding.suggestion && (
-                <div className={`mt-2 rounded border overflow-hidden ${isDark ? 'bg-black border-zinc-800' : 'bg-zinc-50 border-zinc-200'
+                <div className={`mt-2 rounded border overflow-hidden ${
+                  isDark ? 'bg-black border-zinc-800' : 'bg-zinc-50 border-zinc-200'
+                }`}>
+                  <div className={`px-2 py-1 border-b flex items-center gap-1.5 ${
+                    isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
                   }`}>
-                  <div className={`px-2 py-1 border-b flex items-center gap-1.5 ${isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-zinc-100 border-zinc-200'
-                    }`}>
                     <Scan size={10} className="text-zinc-400" />
                     <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
                       修复建议
                     </span>
                   </div>
                   <div className="p-2 overflow-auto custom-scrollbar bg-opacity-50">
-                    <pre className={`text-[10px] font-mono leading-relaxed ${isDark ? 'text-emerald-300' : 'text-emerald-700'
-                      }`}>
+                    <pre className={`text-[10px] font-mono leading-relaxed ${
+                      isDark ? 'text-emerald-300' : 'text-emerald-700'
+                    }`}>
                       <code>{finding.suggestion}</code>
                     </pre>
                   </div>
@@ -199,21 +207,23 @@ function AnnotationCard({
               )}
 
               <div className="mt-2 flex items-center gap-3">
-                <button
+                <button 
                   onClick={handleCopy}
-                  className={`text-[10px] font-bold uppercase tracking-wide transition-all flex items-center gap-1.5 cursor-pointer bg-transparent border-none p-0 ${copied
-                      ? 'text-emerald-500'
+                  className={`text-[10px] font-bold uppercase tracking-wide transition-all flex items-center gap-1.5 cursor-pointer bg-transparent border-none p-0 ${
+                    copied 
+                      ? 'text-emerald-500' 
                       : isDark ? 'text-zinc-400 hover:text-emerald-400' : 'text-zinc-500 hover:text-emerald-600'
-                    }`}
+                  }`}
                 >
                   {copied ? <Check size={10} /> : <Copy size={10} />}
                   {copied ? '已复制' : '复制'}
                 </button>
-
-                <button
-                  onClick={() => onIgnore?.(fid)}
-                  className={`text-[10px] font-bold uppercase tracking-wide transition-all bg-transparent border-none p-0 cursor-pointer ${isDark ? 'text-zinc-600 hover:text-zinc-400' : 'text-zinc-400 hover:text-zinc-600'
-                    }`}
+                
+                <button 
+                   onClick={() => onIgnore?.(fid)}
+                   className={`text-[10px] font-bold uppercase tracking-wide transition-all bg-transparent border-none p-0 cursor-pointer ${
+                     isDark ? 'text-zinc-600 hover:text-zinc-400' : 'text-zinc-400 hover:text-zinc-600'
+                   }`}
                 >
                   忽略
                 </button>
@@ -226,17 +236,17 @@ function AnnotationCard({
   );
 }
 
-function FallbackDiff({
-  patch,
-  options,
-  findings,
-  ignoredFindingIds = [],
+function FallbackDiff({ 
+  patch, 
+  options, 
+  findings, 
+  ignoredFindingIds = [], 
   onIgnoreFinding,
   theme = 'light'
-}: {
-  patch: string;
-  options: DiffOptions;
-  findings: Finding[];
+}: { 
+  patch: string; 
+  options: DiffOptions; 
+  findings: Finding[]; 
   ignoredFindingIds?: string[];
   onIgnoreFinding?: (id: string) => void;
   theme?: 'light' | 'dark';
@@ -320,11 +330,11 @@ function FallbackDiff({
               <span style={{ color, flex: 1 }}>{line || ' '}</span>
             </div>
             {lineFindings.map((f, fi) => (
-              <AnnotationCard
-                key={`${i}-${fi}`}
-                finding={f}
-                index={fi}
-                onCopy={() => { }}
+              <AnnotationCard 
+                key={`${i}-${fi}`} 
+                finding={f} 
+                index={fi} 
+                onCopy={() => { }} 
                 isIgnored={ignoredFindingIds.includes(f.id!)}
                 onIgnore={onIgnoreFinding}
                 theme={isDark ? 'dark' : 'light'}
@@ -337,19 +347,19 @@ function FallbackDiff({
   );
 }
 
-function MultiFileDiffRenderer({
-  patch,
-  findings,
-  options,
-  ignoredFindingIds = [],
+function MultiFileDiffRenderer({ 
+  patch, 
+  findings, 
+  options, 
+  ignoredFindingIds = [], 
   onIgnoreFinding,
   allCollapsed,
   onToggleCollapseAll,
   theme = 'light'
-}: {
-  patch: string;
-  findings: Finding[];
-  options: DiffOptions;
+}: { 
+  patch: string; 
+  findings: Finding[]; 
+  options: DiffOptions; 
   ignoredFindingIds?: string[];
   onIgnoreFinding?: (id: string) => void;
   allCollapsed?: boolean;
@@ -384,7 +394,6 @@ function MultiFileDiffRenderer({
     (async () => {
       try {
         const diffsMod = await import('@pierre/diffs');
-        // @ts-ignore
         const reactMod = await import('@pierre/diffs/react');
         const parsePatchFiles = diffsMod.parsePatchFiles;
         const FileDiff = (reactMod as any).FileDiff;
@@ -434,26 +443,29 @@ function MultiFileDiffRenderer({
         return (
           <div key={idx} className="flex flex-col group/file">
             <div
-              className={`rounded-lg border shadow-sm transition-all duration-300 overflow-hidden ${isCollapsed ? 'opacity-80' : 'shadow-sm border-zinc-200 dark:border-zinc-800'
-                }`}
-              style={{
-                border: theme === 'dark'
-                  ? '1px solid #27272a'
+              className={`rounded-lg border shadow-sm transition-all duration-300 overflow-hidden ${
+                isCollapsed ? 'opacity-80' : 'shadow-sm border-zinc-200 dark:border-zinc-800'
+              }`}
+              style={{ 
+                border: theme === 'dark' 
+                  ? '1px solid #27272a' 
                   : '1px solid #e4e4e7',
-                background: theme === 'dark' ? '#09090b' : 'white'
+                background: theme === 'dark' ? '#09090b' : 'white' 
               }}
             >
-              <div
-                className={`sticky top-0 z-30 px-4 py-2 border-b flex items-center justify-between cursor-pointer transition-colors backdrop-blur-sm ${theme === 'dark'
-                    ? 'bg-zinc-950/90 hover:bg-zinc-900 border-zinc-800'
+              <div 
+                className={`sticky top-0 z-30 px-4 py-2 border-b flex items-center justify-between cursor-pointer transition-colors backdrop-blur-sm ${
+                  theme === 'dark' 
+                    ? 'bg-zinc-950/90 hover:bg-zinc-900 border-zinc-800' 
                     : 'bg-white/90 hover:bg-zinc-50 border-zinc-200'
-                  }`}
+                }`}
                 onClick={() => toggleCollapse(file.name)}
               >
                 <div className="flex items-center gap-3 overflow-hidden">
                   {isCollapsed ? <ChevronRight size={16} className="text-zinc-400" /> : <ChevronDown size={16} className="text-emerald-500" />}
-                  <span className={`text-[12px] font-mono font-bold tracking-tight truncate ${theme === 'dark' ? 'text-zinc-300' : 'text-zinc-700'
-                    }`}>
+                  <span className={`text-[12px] font-mono font-bold tracking-tight truncate ${
+                    theme === 'dark' ? 'text-zinc-300' : 'text-zinc-700'
+                  }`}>
                     {file.name}
                   </span>
                   {fileFindings.length > 0 && (
@@ -466,17 +478,18 @@ function MultiFileDiffRenderer({
                   )}
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${file.type === 'new'
-                      ? 'bg-emerald-500/10 text-emerald-500'
-                      : file.type === 'deleted'
-                        ? 'bg-red-500/10 text-red-500'
+                   <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                     file.type === 'new' 
+                      ? 'bg-emerald-500/10 text-emerald-500' 
+                      : file.type === 'deleted' 
+                        ? 'bg-red-500/10 text-red-500' 
                         : 'bg-blue-500/10 text-blue-500'
-                    }`}>
-                    {file.type === 'new' ? '新增' : file.type === 'deleted' ? '删除' : '修改'}
-                  </div>
-                  <div className="text-zinc-400 opacity-0 group-hover/file:opacity-100 transition-opacity">
-                    <MoreHorizontal size={14} />
-                  </div>
+                   }`}>
+                     {file.type === 'new' ? '新增' : file.type === 'deleted' ? '删除' : '修改'}
+                   </div>
+                   <div className="text-zinc-400 opacity-0 group-hover/file:opacity-100 transition-opacity">
+                     <MoreHorizontal size={14} />
+                   </div>
                 </div>
               </div>
 
@@ -488,12 +501,12 @@ function MultiFileDiffRenderer({
                     renderAnnotation={(annotation: any) => {
                       const finding = annotation?.metadata?.finding as Finding | undefined;
                       if (!finding) return null;
-
+                      
                       return (
-                        <AnnotationCard
-                          finding={finding}
-                          index={0}
-                          onCopy={() => { }}
+                        <AnnotationCard 
+                          finding={finding} 
+                          index={0} 
+                          onCopy={() => { }} 
                           isIgnored={ignoredFindingIds.includes(finding.id!)}
                           onIgnore={onIgnoreFinding}
                           theme={theme}
@@ -538,10 +551,10 @@ interface DiffViewProps {
   theme?: 'light' | 'dark';
 }
 
-export default function DiffView({
-  diff,
-  findings: rawFindings,
-  ignoredFindingIds = [],
+export default function DiffView({ 
+  diff, 
+  findings: rawFindings, 
+  ignoredFindingIds = [], 
   onIgnoreFinding,
   theme = 'light'
 }: DiffViewProps) {
@@ -596,8 +609,8 @@ export default function DiffView({
     <div className={`h-full w-full flex flex-col ${theme === 'dark' ? 'dark' : ''}`}>
       <div
         className="flex-shrink-0 px-4 py-2 flex flex-nowrap items-center gap-2 border-b z-40 shadow-sm overflow-x-auto no-scrollbar"
-        style={{
-          background: theme === 'dark' ? '#09090b' : '#ffffff',
+        style={{ 
+          background: theme === 'dark' ? '#09090b' : '#ffffff', 
           borderColor: theme === 'dark' ? '#27272a' : '#e4e4e7',
           minHeight: '48px'
         }}
@@ -636,16 +649,16 @@ export default function DiffView({
         </div>
 
         <div className="flex items-center gap-2 ml-auto flex-shrink-0">
-          <ToolbarToggle label="换行" checked={options.overflow === 'wrap'} onChange={v => updateOption('overflow', v ? 'wrap' : 'scroll')} title="自动换行">
-            <FileText size={14} />
-          </ToolbarToggle>
-          <ToolbarToggle label="行号" checked={!options.disableLineNumbers} onChange={v => updateOption('disableLineNumbers', !v)} title="显示行号">
-            <Hash size={14} />
-          </ToolbarToggle>
-          <ToolbarButton active={false} onClick={handleToggleAll} title={allCollapsed ? '展开全部' : '折叠全部'}>
-            {allCollapsed ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
-            <span className="text-[10px] font-bold uppercase hidden xl:inline ml-1.5">{allCollapsed ? '展开' : '折叠'}</span>
-          </ToolbarButton>
+            <ToolbarToggle label="换行" checked={options.overflow === 'wrap'} onChange={v => updateOption('overflow', v ? 'wrap' : 'scroll')} title="自动换行">
+              <FileText size={14} />
+            </ToolbarToggle>
+            <ToolbarToggle label="行号" checked={!options.disableLineNumbers} onChange={v => updateOption('disableLineNumbers', !v)} title="显示行号">
+              <Hash size={14} />
+            </ToolbarToggle>
+            <ToolbarButton active={false} onClick={handleToggleAll} title={allCollapsed ? '展开全部' : '折叠全部'}>
+              {allCollapsed ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
+              <span className="text-[10px] font-bold uppercase hidden xl:inline ml-1.5">{allCollapsed ? '展开' : '折叠'}</span>
+            </ToolbarButton>
         </div>
       </div>
 
@@ -660,11 +673,11 @@ export default function DiffView({
               <div className="w-8 h-8 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
             </div>
           }>
-            <MultiFileDiffRenderer
+            <MultiFileDiffRenderer 
               key={theme}
-              patch={diff}
-              findings={findings}
-              options={options}
+              patch={diff} 
+              findings={findings} 
+              options={options} 
               ignoredFindingIds={ignoredFindingIds}
               onIgnoreFinding={onIgnoreFinding}
               allCollapsed={allCollapsed}

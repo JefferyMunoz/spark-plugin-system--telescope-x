@@ -17,7 +17,6 @@ export default defineConfig({
       input: {
         main: path.resolve(__dirname, 'index.html'),
         matrix: path.resolve(__dirname, 'matrix.html'),
-        pet: path.resolve(__dirname, 'pet.html'),
       },
     },
   },
