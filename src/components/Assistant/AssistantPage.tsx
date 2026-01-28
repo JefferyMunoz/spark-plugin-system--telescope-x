@@ -426,12 +426,11 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
 
   // 停止 CLI 执行
   const handleStop = () => {
-    if (processRef.current) {
-      // TODO: 实现停止逻辑
-      addLog('system', '正在停止...');
-    }
+    // 即使无法直接 kill 进程，也要在前端切回可操作状态
     setIsRunning(false);
     setStatus('idle');
+    setCliMenu(null);
+    addLog('system', '⏹ 执行已由用户手动停止');
   };
 
   // 清空日志
@@ -498,6 +497,9 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
 
   // 返回首页
   const handleBackToHome = () => {
+    if (isRunning) {
+      handleStop();
+    }
     setViewMode('home');
     setStatus('idle');
     setLogs([]);
@@ -695,28 +697,42 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
           <div className="flex items-center gap-3">
             <button
               onClick={handleBackToHome}
-              className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center hover:bg-zinc-200 transition-colors cursor-pointer"
-              disabled={isRunning}
+              className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center hover:bg-zinc-200 transition-colors cursor-pointer group"
+              title="返回首页"
             >
-              <Home size={16} className="text-zinc-600" />
+              <Home size={16} className={`transition-colors ${isRunning ? 'text-zinc-400 group-hover:text-zinc-600' : 'text-zinc-600 group-hover:text-zinc-900'}`} />
             </button>
             <div>
               <h2 className="text-[13px] font-black text-zinc-900 tracking-tight">{currentTask}</h2>
-              <p className="text-[10px] text-zinc-500">正在执行任务...</p>
+              <p className="text-[10px] text-zinc-500">
+                {status === 'running' ? '正在执行任务...' :
+                  status === 'success' ? '任务执行完毕' :
+                    status === 'error' ? '执行过程中断' : '等待中'}
+              </p>
             </div>
           </div>
-          <div className={`px-3 py-1 text-[10px] font-black rounded-full border flex items-center gap-1.5 ${status === 'running' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-            status === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-              status === 'error' ? 'bg-red-50 text-red-600 border-red-100' :
-                'bg-zinc-100 text-zinc-600 border-zinc-200'
-            }`}>
-            {status === 'running' && <Terminal size={12} className="animate-pulse" />}
-            {status === 'success' && <CheckCircle2 size={12} />}
-            {status === 'error' && <AlertCircle size={12} />}
-            {status === 'running' ? '执行中...' :
-              status === 'success' ? '已完成' :
-                status === 'error' ? '执行出错' :
-                  '就绪'}
+          <div className="flex items-center gap-2">
+            {status !== 'running' && isRunning === false && (
+              <button
+                onClick={() => setViewMode('assistant')}
+                className="px-3 py-1.5 bg-zinc-900 text-white text-[10px] font-black rounded-lg hover:bg-zinc-800 transition-colors shadow-sm"
+              >
+                返回配置
+              </button>
+            )}
+            <div className={`px-3 py-1 text-[10px] font-black rounded-full border flex items-center gap-1.5 ${status === 'running' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+              status === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                status === 'error' ? 'bg-red-50 text-red-600 border-red-100' :
+                  'bg-zinc-100 text-zinc-600 border-zinc-200'
+              }`}>
+              {status === 'running' && <Terminal size={12} className="animate-pulse" />}
+              {status === 'success' && <CheckCircle2 size={12} />}
+              {status === 'error' && <AlertCircle size={12} />}
+              {status === 'running' ? '执行中...' :
+                status === 'success' ? '已完成' :
+                  status === 'error' ? '执行出错' :
+                    '就绪'}
+            </div>
           </div>
         </div>
 
@@ -835,8 +851,8 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
           </AnimatePresence>
         </div>
 
-        {/* Logs Section - 固定高度 */}
-        <div className="shrink-0 flex flex-col" style={{ height: '220px' }}>
+        {/* Logs Section - 弹性高度，自适应剩余空间 */}
+        <div className="flex-1 min-h-0 flex flex-col mt-2">
           <div className="flex items-center justify-between pb-1.5 shrink-0">
             <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">执行日志</h3>
             <div className="flex items-center gap-2">
