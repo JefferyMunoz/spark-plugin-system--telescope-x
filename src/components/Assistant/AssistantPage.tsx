@@ -176,9 +176,9 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
         let isInstalled = false;
 
         if (Array.isArray(result?.installed)) {
-          isInstalled = result.installed.includes('@srd/spark-exam-cli');
+          isInstalled = result.installed.includes('spark-exam-cli') || result.installed.includes('@srd/spark-exam-cli');
         } else if (typeof result === 'object') {
-          isInstalled = result?.['@srd/spark-exam-cli'] === true || result?.installed === true;
+          isInstalled = result?.['spark-exam-cli'] === true || result?.['@srd/spark-exam-cli'] === true || result?.installed === true;
         } else if (result === true) {
           isInstalled = true;
         }
@@ -207,7 +207,7 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
         setInstallProgress('正在从研发云下载 CLI 工具...');
         // 直接传递包名，spark-master 会包装成 { type: 'installDependencies', data: { name: '...' } }
         const result = await spark.installDependencies({
-          name: '@srd/spark-exam-cli'
+          name: 'spark-exam-cli'
         });
 
         if (result) {
@@ -219,7 +219,7 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
         }
       } else {
         // 如果没有 installDependencies API，提示用户手动安装
-        setInstallProgress('请手动安装：npm install @srd/spark-exam-cli -g --registry=http://npm.awspucs.com');
+        setInstallProgress('请手动运行：npx --registry=https://gz01-srdart.srdcloud.cn/npm/composq-tplibrary/ctcai_ctcogranking-oshare-npm-mc/ spark-exam-cli');
         setTimeout(() => {
           setCliInstalled(true); // 假设用户已安装
         }, 3000);
