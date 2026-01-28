@@ -383,6 +383,23 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
           args.push(userInfo);
         }
 
+        // 生成临时截图路径
+        let tempScreenshotPath = '';
+        try {
+          // 尝试使用 Spark 平台能力获取临时目录，降级使用 /tmp
+          const path = (window as any).spark?.platform?.path;
+          const os = (window as any).spark?.platform?.os;
+          const tmpDir = os?.tmpdir() || '/tmp';
+          const timestamp = Date.now();
+          tempScreenshotPath = path ? path.join(tmpDir, `spark_exam_${timestamp}.png`) : `/tmp/spark_exam_${timestamp}.png`;
+
+          // 传递给 CLI
+          args.push(`--screenshot-path=${tempScreenshotPath}`);
+          addLog('system', `📸 截图输出路径: ${tempScreenshotPath}`);
+        } catch (e) {
+          console.warn('获取临时路径失败', e);
+        }
+
         // 记录脱敏后的命令用于调试
         addLog('system', `启动指令: npx -y --registry=... --always-auth=true --_auth=****** spark-exam-cli assistant ...`);
 
@@ -402,6 +419,24 @@ const AssistantPage: React.FC<AssistantPageProps> = ({ showToast }) => {
         if (result && result.success) {
           addLog('system', '✅ CLI 任务执行圆满完成');
           setStatus('success');
+
+          // 任务成功后，尝试加载本地截图
+          if (tempScreenshotPath) {
+            const fs = (window as any).spark?.platform?.fs;
+            if (fs && fs.existsSync(tempScreenshotPath)) {
+              // 读取文件并转换为 Base64 显示
+              try {
+                const bitmap = fs.readFileSync(tempScreenshotPath);
+                const base64 = Buffer.from(bitmap).toString('base64');
+                setScreenshot(`data:image/png;base64,${base64}`);
+                addLog('system', '🖼️ 已成功加载本地截图');
+              } catch (readErr) {
+                addLog('stderr', `无法读取截图文件: ${readErr}`);
+              }
+            } else {
+              addLog('stderr', '未找到生成的截图文件');
+            }
+          }
         } else {
           const errorMsg = result?.stderr || result?.error || '执行失败';
           addLog('stderr', `执行失败: ${errorMsg}`);
