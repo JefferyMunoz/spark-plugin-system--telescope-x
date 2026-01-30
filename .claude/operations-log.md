@@ -44,3 +44,13 @@ Final resolution patch build completed.
 Final attempt build completed.
 Simplified path build completed.
 Robust path resolution build completed.
+
+## 操作日志 - 修复 detectType.ts 类型问题
+时间：Thu Jan 29 10:43:00 CST 2026
+
+### 1. 分析与决策
+- **问题**: detectType.ts 类型不匹配。
+- **决策**: 修改 DetectionResult 为 Partial。
+
+### 2. 执行记录
+- [EDIT] src/lib/detectType.ts

@@ -2,15 +2,14 @@ const fs = require('fs');
 const path = require('path');
 const dist = path.join(__dirname, '..', 'dist');
 const pub = path.join(__dirname, '..', 'public');
-
-// Copy core files to dist and root
 const root = path.join(__dirname, '..');
-for (const f of ['preload.cjs', 'logo.png']) {
+
+// Copy core files to dist
+for (const f of ['preload.cjs', 'logo.png', 'plugin.json']) {
     const src = path.join(pub, f);
     if (fs.existsSync(src)) {
         fs.copyFileSync(src, path.join(dist, f));
-        // Also copy to root for spark-master local development recognition
-        fs.copyFileSync(src, path.join(root, f));
+        console.log(`[postbuild] Copied ${f} to dist/`);
     }
 }
 
@@ -47,7 +46,6 @@ const pkgContent = {
     pluginName: pluginConfig.pluginName,
     version: pluginConfig.version,
     description: pluginConfig.description,
-    // Use flat paths for production build
     main: distPluginConfig.main,
     preload: distPluginConfig.preload,
     entry: distPluginConfig.entry,
@@ -57,4 +55,4 @@ const pkgContent = {
 };
 
 fs.writeFileSync(path.join(dist, 'package.json'), JSON.stringify(pkgContent, null, 2));
-console.log('Postbuild complete: Metadata synced to dist/package.json');
+console.log('[postbuild] Complete: dist/ is ready');
