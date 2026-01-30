@@ -1,4 +1,9 @@
-const getSpark = () => {
+interface SparkAPI {
+  agentBrowserCmd?: (params: { data: { command: string } }) => Promise<{ success: boolean; data?: string; error?: string }>;
+  [key: string]: any;
+}
+
+const getSpark = (): SparkAPI => {
   return (window as any).spark || {};
 };
 
@@ -28,6 +33,18 @@ export interface AutoExamOptions {
   onQuestion?: (current: number, total: number, question: string) => void;
   onScore?: (score: number, total: number) => void;
   maxAttempts?: number;
+}
+
+interface ParsedQuestionOption {
+  text: string;
+  ref: string;
+}
+
+interface InternalParsedQuestion {
+  id: string;
+  text: string;
+  options: ParsedQuestionOption[];
+  type: 'single' | 'multiple' | 'input';
 }
 
 /**
@@ -104,8 +121,7 @@ export class ExamEngine {
     // - checkbox "选项A" [ref=e3]
     // - link "题目文本" [ref=e4]
 
-    let currentQuestion: Partial<Question> & { options: Array<{ text: string; ref: string }> } | null = null;
-    let lastOptionRef = '';
+    let currentQuestion: InternalParsedQuestion | null = null;
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -123,12 +139,12 @@ export class ExamEngine {
           console.log('[ExamEngine] Found input field:', text);
         }
         // 保存上一个题目（遇到 textbox 表示新题目开始）
-        if (currentQuestion && currentQuestion.options!.length > 0) {
+        if (currentQuestion && currentQuestion.options.length > 0) {
           questions.push({
-            id: currentQuestion.id || Date.now().toString() + Math.random(),
-            text: currentQuestion.text || '',
+            id: currentQuestion.id,
+            text: currentQuestion.text,
             options: currentQuestion.options.map(o => o.text),
-            type: currentQuestion.type || 'single'
+            type: currentQuestion.type
           });
           currentQuestion = null;
         }
@@ -140,12 +156,9 @@ export class ExamEngine {
       if (radioMatch) {
         const refMatch = trimmed.match(/\[ref=([^\]]+)\]/);
         const ref = refMatch ? refMatch[1] : '';
-        if (!currentQuestion) {
-          // 遇到 radio 但没有当前题目，忽略（可能是非题目区域）
-        } else {
-          currentQuestion.options!.push({ text: radioMatch[1], ref });
+        if (currentQuestion) {
+          currentQuestion.options.push({ text: radioMatch[1], ref });
         }
-        lastOptionRef = ref;
         continue;
       }
 
@@ -157,7 +170,7 @@ export class ExamEngine {
         if (!currentQuestion) {
           // 创建新的多选题
           currentQuestion = {
-            id: Date.now().toString() + Math.random(),
+            id: (Date.now() + Math.random()).toString(),
             text: '',
             options: [],
             type: 'multiple'
@@ -165,8 +178,7 @@ export class ExamEngine {
         } else {
           currentQuestion.type = 'multiple';
         }
-        currentQuestion.options!.push({ text: checkboxMatch[1], ref });
-        lastOptionRef = ref;
+        currentQuestion.options.push({ text: checkboxMatch[1], ref });
         continue;
       }
 
@@ -177,23 +189,23 @@ export class ExamEngine {
         // 如果是有效的题目文本，开始新题目
         if (this.isValidQuestionText(text) && text.length > 5) {
           // 保存上一个题目
-          if (currentQuestion && currentQuestion.options!.length > 0) {
+          if (currentQuestion && currentQuestion.options.length > 0) {
             questions.push({
-              id: currentQuestion.id || Date.now().toString() + Math.random(),
-              text: currentQuestion.text || '',
+              id: currentQuestion.id,
+              text: currentQuestion.text,
               options: currentQuestion.options.map(o => o.text),
-              type: currentQuestion.type || 'single'
+              type: currentQuestion.type
             });
           }
           // 开始新题目
           currentQuestion = {
-            id: Date.now().toString() + Math.random(),
+            id: (Date.now() + Math.random()).toString(),
             text: text,
             options: [],
             type: 'single'
           };
           console.log('[ExamEngine] Found question:', text);
-        } else if (currentQuestion && currentQuestion.options!.length === 0) {
+        } else if (currentQuestion && currentQuestion.options.length === 0) {
           // 追加到当前题目文本（还没有选项）
           currentQuestion.text += ' ' + text;
         }
@@ -202,12 +214,12 @@ export class ExamEngine {
     }
 
     // 保存最后一个题目
-    if (currentQuestion && currentQuestion.options!.length > 0) {
+    if (currentQuestion && currentQuestion.options.length > 0) {
       questions.push({
-        id: currentQuestion.id || Date.now().toString(),
+        id: currentQuestion.id,
         text: currentQuestion.text,
         options: currentQuestion.options.map(o => o.text),
-        type: currentQuestion.type || 'single'
+        type: currentQuestion.type
       });
     }
 
@@ -314,6 +326,17 @@ export class ExamEngine {
     }
 
     return results;
+  }
+
+  /**
+   * 填充答案到页面（公开方法）
+   */
+  static async fillAnswers(questions: Question[], answers: Record<string, string>): Promise<boolean> {
+    const answerMap = new Map<string, string>();
+    for (const [id, ans] of Object.entries(answers)) {
+      answerMap.set(id, ans);
+    }
+    return this.selectAnswersOnPage(questions, answerMap);
   }
 
   /**
@@ -441,7 +464,7 @@ export class ExamEngine {
           const totalTitle = document.querySelector('.score-form__news .tbottom-title');
           if (scoreSpan && totalTitle) {
             const correct = parseInt(scoreSpan.textContent);
-            const totalMatch = totalTitle.textContent.match(/(\\\\d+)/);
+            const totalMatch = totalTitle.textContent.match(/(\\d+)/);
             const total = totalMatch ? parseInt(totalMatch[1]) : 10;
             JSON.stringify({ correct, total });
           } else {
@@ -563,7 +586,7 @@ export class ExamEngine {
 
       // 步骤6: 获取分数
       report(7, '正在检查分数...');
-      let scoreResult = await this.getScore();
+      let scoreResult = await this.getScore() as any;
 
       if (!scoreResult) {
         throw new Error('无法获取分数');

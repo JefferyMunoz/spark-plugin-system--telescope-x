@@ -1,7 +1,7 @@
 {
   "name": "spark-plugin-system--telescope-x",
   "pluginName": "闪搭X",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "闪搭X - 极简开发者工具箱",
   "main": "index.html",
   "preload": "preload.cjs",

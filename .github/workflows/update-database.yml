@@ -1,0 +1,108 @@
+name: Update Spark Database
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  update-database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+        with:
+          path: source-plugin
+
+      - name: Checkout sparkdatabase
+        uses: actions/checkout@v4
+        with:
+          repository: ssshuai1999/sparkdatabase
+          path: sparkdatabase
+          token: ${{ secrets.GITEE_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Get plugin info
+        id: plugin-info
+        run: |
+          cd source-plugin
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Plugin: $NAME, Version: $VERSION"
+
+      - name: Find and copy logo
+        id: copy-logo
+        run: |
+          PLUGIN_NAME="${{ steps.plugin-info.outputs.name }}"
+          LOGO_NAME="${PLUGIN_NAME#spark-plugin-}.png"
+
+          # Try to find logo in public/ first, then root
+          if [ -f "source-plugin/public/logo.png" ]; then
+            cp source-plugin/public/logo.png sparkdatabase/assets/$LOGO_NAME
+          elif [ -f "source-plugin/public/logo.svg" ]; then
+            cp source-plugin/public/logo.svg sparkdatabase/assets/${LOGO_NAME%.png}.svg
+          elif [ -f "source-plugin/logo.png" ]; then
+            cp source-plugin/logo.png sparkdatabase/assets/$LOGO_NAME
+          elif [ -f "source-plugin/logo.svg" ]; then
+            cp source-plugin/logo.svg sparkdatabase/assets/${LOGO_NAME%.png}.svg
+          else
+            echo "No logo found!"
+            exit 1
+          fi
+
+          # Determine logo URL path
+          if [ -f "sparkdatabase/assets/$LOGO_NAME" ]; then
+            echo "logo-path=assets/$LOGO_NAME" >> $GITHUB_OUTPUT
+            echo "logo-url=https://gitee.com/ssshuai1999/sparkdatabase/raw/master/assets/$LOGO_NAME" >> $GITHUB_OUTPUT
+          else
+            SVG_NAME="${LOGO_NAME%.png}.svg"
+            echo "logo-path=assets/$SVG_NAME" >> $GITHUB_OUTPUT
+            echo "logo-url=https://gitee.com/ssshuai1999/sparkdatabase/raw/master/assets/$SVG_NAME" >> $GITHUB_OUTPUT
+          fi
+
+          ls -la sparkdatabase/assets/
+
+      - name: Update total-plugins.json
+        run: |
+          PLUGIN_NAME="${{ steps.plugin-info.outputs.name }}"
+          VERSION="${{ steps.plugin-info.outputs.version }}"
+          LOGO_URL="${{ steps.copy-logo.outputs.logo-url }}"
+
+          cd sparkdatabase
+
+          # Update plugin entry in total-plugins.json
+          node -e "
+            const fs = require('fs');
+            const plugins = JSON.parse(fs.readFileSync('plugins/total-plugins.json', 'utf8'));
+            const idx = plugins.findIndex(p => p.name === '$PLUGIN_NAME');
+            if (idx >= 0) {
+              plugins[idx].version = '$VERSION';
+              plugins[idx].logo = '$LOGO_URL';
+              console.log('Updated plugin:', plugins[idx].name, 'version:', plugins[idx].version);
+            } else {
+              console.log('Plugin not found in total-plugins.json');
+              process.exit(1);
+            }
+            fs.writeFileSync('plugins/total-plugins.json', JSON.stringify(plugins, null, 2));
+          "
+
+          cat plugins/total-plugins.json | grep -A5 "$PLUGIN_NAME"
+
+      - name: Commit and push to sparkdatabase
+        run: |
+          cd sparkdatabase
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add assets/ plugins/total-plugins.json
+          git diff --staged
+          git commit -m "chore: update ${{ steps.plugin-info.outputs.name }} to v${{ steps.plugin-info.outputs.version }}"
+          git push origin master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITEE_TOKEN }}
